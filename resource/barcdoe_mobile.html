@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>모바일 스마트 바코드 패스</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Noto Sans KR & JetBrains Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <!-- QRCode.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- JsBarcode Library for Line Barcodes (1D Barcodes) -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: #090d16;
+            color: #f8fafc;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .font-mono-code {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Glassmorphism Styling */
+        .glass-card {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+        }
+
+        .glass-pill {
+            background: rgba(255, 255, 255, 0.07);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        /* Laser Beam Scan Effect */
+        @keyframes scanBeam {
+            0% { top: 4%; opacity: 0.3; }
+            50% { opacity: 1; }
+            100% { top: 92%; opacity: 0.3; }
+        }
+
+        .scan-line-vert {
+            position: absolute;
+            left: 2%;
+            right: 2%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #38bdf8, #818cf8, #38bdf8, transparent);
+            box-shadow: 0 0 15px #38bdf8, 0 0 25px #818cf8;
+            border-radius: 50%;
+            z-index: 20;
+            animation: scanBeam 2.2s ease-in-out infinite alternate;
+            pointer-events: none;
+        }
+
+        /* Glow Elements */
+        .glow-bg {
+            position: absolute;
+            width: 280px;
+            height: 280px;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Corner Target Brackets */
+        .corner-bracket {
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            border-color: #38bdf8;
+            pointer-events: none;
+            z-index: 15;
+            transition: all 0.3s ease;
+        }
+        .bracket-tl { top: -2px; left: -2px; border-top: 3px solid; border-left: 3px solid; border-top-left-radius: 6px; }
+        .bracket-tr { top: -2px; right: -2px; border-top: 3px solid; border-right: 3px solid; border-top-right-radius: 6px; }
+        .bracket-bl { bottom: -2px; left: -2px; border-bottom: 3px solid; border-left: 3px solid; border-bottom-left-radius: 6px; }
+        .bracket-br { bottom: -2px; right: -2px; border-bottom: 3px solid; border-right: 3px solid; border-bottom-right-radius: 6px; }
+
+        /* Card Entrance & Reveal Animations */
+        @keyframes barcodeReveal {
+            0% { transform: scale(0.85) translateY(20px); opacity: 0; filter: blur(10px); }
+            60% { transform: scale(1.02) translateY(-2px); opacity: 1; filter: blur(0); }
+            100% { transform: scale(1) translateY(0); opacity: 1; filter: blur(0); }
+        }
+
+        .animate-reveal {
+            animation: barcodeReveal 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Shimmer Effect for Reveal Button */
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(200%); }
+        }
+
+        .animate-shimmer {
+            position: relative;
+            overflow: hidden;
+        }
+        .animate-shimmer::after {
+            content: '';
+            position: absolute;
+            top: 0; right: 0; bottom: 0; left: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+            animation: shimmer 2.5s infinite;
+        }
+
+        /* QR Canvas Alignment */
+        #qrcode img, #qrcode canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 8px;
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* Custom Scrollbar for Modal */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(56, 189, 248, 0.4);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between items-center p-4 relative overflow-x-hidden bg-slate-950 text-slate-100">
+
+    <!-- Ambient Glow BG -->
+    <div class="glow-bg bg-cyan-500 top-10 -left-20"></div>
+    <div class="glow-bg bg-indigo-600 bottom-10 -right-20"></div>
+
+    <!-- App Header -->
+    <header class="w-full max-w-md mt-2 flex justify-between items-center z-10 px-2">
+        <div class="flex items-center space-x-2.5">
+            <div class="relative flex items-center justify-center">
+                <span class="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-cyan-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500"></span>
+            </div>
+            <div>
+                <h1 class="text-xs font-bold tracking-wider text-slate-200 uppercase">SMART PASS MOBILE</h1>
+                <p class="text-[10px] text-slate-400">1D 줄 바코드 & 2D QR 모드</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button id="scanToggleBtn" onclick="toggleScanBeam()" class="glass-pill px-3 py-1.5 rounded-full text-xs font-medium text-slate-300 hover:text-white flex items-center gap-1.5 transition active:scale-95">
+                <i id="laserIcon" class="fa-solid fa-bolt text-amber-400"></i>
+                <span id="scanBtnText">레이저 ON</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Pass Container -->
+    <main class="w-full max-w-md my-auto py-4 z-10">
+        
+        <!-- Card Frame -->
+        <div class="glass-card rounded-3xl p-6 flex flex-col items-center relative transition-all duration-500">
+            
+            <!-- Company / App Header with logo.png -->
+            <div class="w-full flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-slate-900 border border-slate-700/80 p-1 flex items-center justify-center shadow-md relative overflow-hidden group">
+                        <img id="headerLogoImg" 
+                             src="logo.png" 
+                             alt="로고" 
+                             class="w-full h-full object-contain rounded-xl"
+                             onerror="handleImageError(this)">
+                    </div>
+                    <div>
+                        <span id="passCategoryTag" class="text-[10px] font-bold text-cyan-400 uppercase tracking-widest block">MEMBERSHIP & PASS</span>
+                        <h2 id="displayTitle" class="text-base font-bold text-white tracking-tight">디지털 스마트 바코드</h2>
+                    </div>
+                </div>
+
+                <button onclick="openConfigModal()" class="w-8 h-8 rounded-full glass-pill flex items-center justify-center text-slate-400 hover:text-cyan-400 transition">
+                    <i class="fa-solid fa-gear text-xs"></i>
+                </button>
+            </div>
+
+            <!-- Initial Unreveal State (Show Barcode Button Trigger) -->
+            <div id="unrevealedState" class="w-full py-8 flex flex-col items-center justify-center text-center">
+                <div class="w-20 h-20 rounded-3xl bg-gradient-to-tr from-cyan-500/20 to-indigo-500/20 border border-cyan-500/30 flex items-center justify-center mb-4 text-cyan-400 text-3xl shadow-lg shadow-cyan-500/10">
+                    <i class="fa-solid fa-barcode animate-pulse"></i>
+                </div>
+                <h3 class="text-lg font-bold text-white mb-1">스마트 바코드 태그 준비</h3>
+                <p class="text-xs text-slate-400 mb-6 max-w-xs">아래 버튼을 터치하여 보안 바코드를 화면에 호출하세요.</p>
+
+                <!-- Trigger Action Button with Animation -->
+                <button onclick="revealBarcode()" class="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold text-sm shadow-xl shadow-cyan-500/25 active:scale-95 transition-all duration-300 flex items-center justify-center gap-2 animate-shimmer">
+                    <i class="fa-solid fa-qrcode text-base"></i>
+                    <span>바코드 불러오기 (터치)</span>
+                    <i class="fa-solid fa-arrow-right text-xs opacity-70 ml-1"></i>
+                </button>
+            </div>
+
+            <!-- Revealed Barcode Display Area (Hidden by default until clicked) -->
+            <div id="revealedState" class="w-full flex-col items-center hidden animate-reveal">
+
+                <!-- Barcode Type Switcher Tabs (1D Line Barcode vs 2D QR Code) -->
+                <div class="w-full bg-slate-900/90 p-1 rounded-2xl border border-slate-800 flex mb-4 text-xs">
+                    <button id="tab1D" onclick="switchBarcodeType('1d')" class="flex-1 py-2 rounded-xl font-medium transition flex items-center justify-center gap-1.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow">
+                        <i class="fa-solid fa-barcode text-sm"></i>
+                        <span>줄 바코드 (1D)</span>
+                    </button>
+                    <button id="tab2D" onclick="switchBarcodeType('2d')" class="flex-1 py-2 rounded-xl font-medium transition flex items-center justify-center gap-1.5 text-slate-400 hover:text-white">
+                        <i class="fa-solid fa-qrcode text-sm"></i>
+                        <span>2D QR 바코드</span>
+                    </button>
+                </div>
+
+                <!-- Timer & Auto-Refresh Indicator -->
+                <div class="w-full flex items-center justify-between text-[11px] text-slate-400 mb-2 px-1">
+                    <div class="flex items-center gap-1.5">
+                        <i class="fa-regular fa-clock text-cyan-400"></i>
+                        <span>남은 시간: <strong id="timerText" class="text-cyan-300 font-mono">03:00</strong></span>
+                    </div>
+                    <button onclick="refreshBarcodeTimer()" class="text-slate-400 hover:text-cyan-300 flex items-center gap-1 transition">
+                        <i class="fa-solid fa-rotate-right text-[10px]"></i> 시간 연장
+                    </button>
+                </div>
+
+                <!-- Main Barcode Display Box -->
+                <div class="w-full relative p-4 bg-white rounded-2xl border border-slate-200 shadow-2xl flex flex-col items-center justify-center overflow-hidden my-1">
+                    
+                    <!-- Corner Target Brackets -->
+                    <div class="corner-bracket bracket-tl"></div>
+                    <div class="corner-bracket bracket-tr"></div>
+                    <div class="corner-bracket bracket-bl"></div>
+                    <div class="corner-bracket bracket-br"></div>
+
+                    <!-- Scanning Laser Beam Effect -->
+                    <div id="laserBeam" class="scan-line-vert"></div>
+
+                    <!-- 1D Line Barcode Container (SVG rendered via JsBarcode) -->
+                    <div id="lineBarcodeContainer" class="w-full flex flex-col items-center justify-center my-1">
+                        <svg id="lineBarcode" class="max-w-full h-auto"></svg>
+                    </div>
+
+                    <!-- 2D QR Code Container (Canvas/IMG rendered via QRCode.js with Logo Overlay) -->
+                    <div id="qrBarcodeContainer" class="relative hidden flex-col items-center justify-center p-2">
+                        <div id="qrcode" class="relative z-0"></div>
+                        <!-- Logo Overlay in Center of QR Code -->
+                        <div id="logoOverlay" class="absolute z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-1 bg-white rounded-lg shadow-md border border-slate-200 flex items-center justify-center">
+                            <img id="qrCenterLogoImg" 
+                                 src="logo.png" 
+                                 alt="로고" 
+                                 class="w-9 h-9 object-contain rounded-md" 
+                                 onerror="handleImageError(this)">
+                        </div>
+                    </div>
+
+                    <!-- Readable Value Text Below Barcode -->
+                    <div class="mt-2 pt-2 border-t border-slate-100 w-full text-center">
+                        <span id="barcodeValueDisplay" class="font-mono-code text-xs sm:text-sm font-bold text-slate-800 tracking-wider">
+                            8801234567890
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Fullscreen Brightness Mode Button -->
+                <button onclick="openFullscreenBarcode()" class="mt-3 w-full py-2 bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white rounded-xl text-xs font-medium border border-slate-800 flex items-center justify-center gap-2 transition">
+                    <i class="fa-solid fa-expand text-cyan-400"></i>
+                    <span>스캐너 인식용 크게 보기 (밝기 업)</span>
+                </button>
+
+            </div>
+
+            <!-- Card Bottom Info Metadata -->
+            <div class="w-full mt-5 pt-4 border-t border-slate-800/80 flex justify-between items-center text-xs text-slate-400 px-1">
+                <div class="flex flex-col">
+                    <span class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">발급 일시</span>
+                    <span id="timestampText" class="font-mono text-slate-300">2026.08.07 13:50</span>
+                </div>
+                <div class="flex flex-col text-right">
+                    <span class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">인증 상태</span>
+                    <span class="text-emerald-400 font-semibold flex items-center gap-1 justify-end">
+                        <i class="fa-solid fa-circle-check text-[10px]"></i> 정상 승인됨
+                    </span>
+                </div>
+            </div>
+
+            <!-- Local Image Status Tag -->
+            <div id="imageStatusTag" class="mt-4 w-full text-center text-[11px] text-slate-400 glass-pill py-2 px-3 rounded-xl flex items-center justify-between">
+                <span class="flex items-center gap-1.5 truncate">
+                    <i class="fa-solid fa-file-image text-cyan-400"></i>
+                    <span id="imageStatusText">로컬 이미지: <code class="text-cyan-300 font-mono">logo.png</code> 연동 중</span>
+                </span>
+                <span class="text-[10px] bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-md font-mono">OK</span>
+            </div>
+
+        </div>
+
+        <!-- Quick Action Buttons -->
+        <div class="grid grid-cols-3 gap-3 mt-4">
+            <button onclick="openConfigModal()" class="glass-card hover:bg-slate-800/80 p-3 rounded-2xl flex flex-col items-center justify-center text-slate-200 active:scale-95 transition group">
+                <i class="fa-solid fa-pen-to-square text-lg text-cyan-400 mb-1 group-hover:scale-110 transition-transform"></i>
+                <span class="text-xs font-medium">내용 변경</span>
+            </button>
+            <button onclick="copyBarcodeData()" class="glass-card hover:bg-slate-800/80 p-3 rounded-2xl flex flex-col items-center justify-center text-slate-200 active:scale-95 transition group">
+                <i class="fa-solid fa-copy text-lg text-indigo-400 mb-1 group-hover:scale-110 transition-transform"></i>
+                <span class="text-xs font-medium">번호 복사</span>
+            </button>
+            <button onclick="downloadBarcodeImage()" class="glass-card hover:bg-slate-800/80 p-3 rounded-2xl flex flex-col items-center justify-center text-slate-200 active:scale-95 transition group">
+                <i class="fa-solid fa-download text-lg text-emerald-400 mb-1 group-hover:scale-110 transition-transform"></i>
+                <span class="text-xs font-medium">이미지 저장</span>
+            </button>
+        </div>
+    </main>
+
+    <!-- Footer Note -->
+    <footer class="w-full max-w-md text-center text-[11px] text-slate-500 mb-2 z-10">
+        <p>© 2026 Mobile Smart Barcode Pass • <span class="text-slate-400">logo.png</span> 경로 연결 지원</p>
+    </footer>
+
+    <!-- Fullscreen High-Brightness Barcode Modal for Scanning -->
+    <div id="fullscreenModal" class="fixed inset-0 z-50 bg-white text-slate-900 flex flex-col items-center justify-center p-6 opacity-0 pointer-events-none transition-opacity duration-300">
+        <button onclick="closeFullscreenBarcode()" class="absolute top-6 right-6 text-slate-800 hover:text-black p-3 text-2xl font-bold">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <div class="text-center mb-6">
+            <span class="text-xs font-bold text-cyan-600 tracking-widest uppercase block mb-1">SCANNER HIGH BRIGHTNESS MODE</span>
+            <h3 class="text-xl font-black">스캐너 전용 확대한 화면</h3>
+            <p class="text-xs text-slate-500 mt-1">리더기에 직접 태그해 주세요</p>
+        </div>
+
+        <!-- Expanded Barcode Target Container -->
+        <div class="w-full max-w-xs p-6 bg-white border-2 border-slate-200 rounded-3xl shadow-2xl flex flex-col items-center justify-center">
+            <div id="fsBarcode1DContainer" class="w-full flex justify-center">
+                <svg id="fsLineBarcode" class="w-full h-auto"></svg>
+            </div>
+            <div id="fsBarcode2DContainer" class="hidden relative p-2">
+                <div id="fsQrcode"></div>
+            </div>
+            <p id="fsBarcodeValue" class="mt-4 font-mono-code font-bold text-lg text-slate-900 tracking-widest">
+                8801234567890
+            </p>
+        </div>
+
+        <button onclick="closeFullscreenBarcode()" class="mt-8 px-8 py-3 bg-slate-900 text-white font-bold rounded-2xl text-sm shadow-lg active:scale-95 transition">
+            화면 닫기
+        </button>
+    </div>
+
+    <!-- Configuration Modal -->
+    <div id="configModal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-end sm:items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="w-full max-w-md bg-slate-900 border border-slate-700/80 rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl transform translate-y-full sm:translate-y-0 transition-transform duration-300 max-h-[90vh] overflow-y-auto">
+            
+            <div class="flex justify-between items-center mb-5 pb-3 border-b border-slate-800">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-cyan-400"></i> 바코드 데이터 설정
+                </h3>
+                <button onclick="closeConfigModal()" class="text-slate-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4 text-xs">
+                <div>
+                    <label class="block text-slate-300 font-medium mb-1.5">카드 타이틀</label>
+                    <input type="text" id="inputTitle" value="디지털 스마트 바코드" 
+                        class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-cyan-400">
+                </div>
+
+                <div>
+                    <label class="block text-slate-300 font-medium mb-1.5">1D 줄 바코드 번호 (숫자/문자)</label>
+                    <input type="text" id="inputLineValue" value="8801234567890" 
+                        class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-white font-mono focus:outline-none focus:border-cyan-400">
+                </div>
+
+                <div>
+                    <label class="block text-slate-300 font-medium mb-1.5">2D QR 바코드 수록 값 (URL/텍스트)</label>
+                    <textarea id="inputQRValue" rows="2" 
+                        class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-white font-mono focus:outline-none focus:border-cyan-400 resize-none">https://github.com</textarea>
+                </div>
+
+                <div>
+                    <label class="block text-slate-300 font-medium mb-1.5">로고 이미지 파일명 안내</label>
+                    <div class="text-[11px] text-slate-400 leading-relaxed bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 space-y-1">
+                        <p>📍 HTML 파일과 같은 폴더에 <strong class="text-cyan-300 font-mono">logo.png</strong> 파일을 넣으시면 상단 카드 로고 및 QR 중앙 로고에 자동 적용됩니다.</p>
+                        <p class="text-slate-500">※ 로고 파일이 없어도 예시 디자인 아이콘으로 자동 대처됩니다.</p>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="applyConfig()" class="w-full mt-6 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-cyan-500/20 active:scale-98 transition">
+                설정 및 변경사항 적용
+            </button>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-800/90 backdrop-blur-md border border-slate-600 text-white px-5 py-3 rounded-full shadow-2xl flex items-center gap-2.5 text-xs opacity-0 pointer-events-none transform translate-y-4 transition-all duration-300">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
+        <span id="toastMsg">복사되었습니다.</span>
+    </div>
+
+    <script>
+        // State Management
+        let currentMode = '1d'; // '1d' or '2d'
+        let isRevealed = false;
+        let isScanActive = true;
+        let countdownSeconds = 180; // 3 minutes
+        let timerInterval = null;
+
+        // Current Values
+        let lineData = "8801234567890";
+        let qrData = "https://github.com";
+
+        // DOM Ready Initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            updateTimestamp();
+            
+            // Set up default inputs
+            document.getElementById('inputLineValue').value = lineData;
+            document.getElementById('inputQRValue').value = qrData;
+        });
+
+        // Reveal Barcode Animation Triggered by Button Touch
+        function revealBarcode() {
+            const unrevealed = document.getElementById('unrevealedState');
+            const revealed = document.getElementById('revealedState');
+
+            unrevealed.classList.add('hidden');
+            revealed.classList.remove('hidden');
+            revealed.classList.add('flex');
+
+            isRevealed = true;
+
+            // Generate initial barcodes
+            renderBarcodes();
+
+            // Start Countdown Timer
+            startTimer();
+
+            showToast('스마트 바코드가 생성되었습니다.', 'fa-bolt', 'text-amber-400');
+        }
+
+        // Render both 1D Line Barcode and 2D QR Code
+        function renderBarcodes() {
+            // Render 1D Line Barcode (CODE128) using JsBarcode
+            try {
+                JsBarcode("#lineBarcode", lineData, {
+                    format: "CODE128",
+                    width: 2.2,
+                    height: 75,
+                    displayValue: false,
+                    lineColor: "#0f172a",
+                    background: "#ffffff",
+                    margin: 8
+                });
+
+                // Also render for fullscreen mode
+                JsBarcode("#fsLineBarcode", lineData, {
+                    format: "CODE128",
+                    width: 2.8,
+                    height: 100,
+                    displayValue: false,
+                    lineColor: "#0f172a",
+                    background: "#ffffff",
+                    margin: 10
+                });
+            } catch (err) {
+                console.error("1D Barcode Render Error:", err);
+            }
+
+            // Render 2D QR Code using QRCode.js
+            const qrContainer = document.getElementById("qrcode");
+            qrContainer.innerHTML = "";
+            new QRCode(qrContainer, {
+                text: qrData,
+                width: 170,
+                height: 170,
+                colorDark: "#0f172a",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            // Fullscreen QR Code
+            const fsQrContainer = document.getElementById("fsQrcode");
+            fsQrContainer.innerHTML = "";
+            new QRCode(fsQrContainer, {
+                text: qrData,
+                width: 220,
+                height: 220,
+                colorDark: "#0f172a",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            // Update displayed string
+            updateDisplayedValueText();
+        }
+
+        // Switch Tab between 1D Line Barcode and 2D QR Code
+        function switchBarcodeType(mode) {
+            currentMode = mode;
+            const tab1D = document.getElementById('tab1D');
+            const tab2D = document.getElementById('tab2D');
+            const container1D = document.getElementById('lineBarcodeContainer');
+            const container2D = document.getElementById('qrBarcodeContainer');
+
+            if (mode === '1d') {
+                tab1D.className = "flex-1 py-2 rounded-xl font-medium transition flex items-center justify-center gap-1.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow";
+                tab2D.className = "flex-1 py-2 rounded-xl font-medium transition flex items-center justify-center gap-1.5 text-slate-400 hover:text-white";
+                container1D.classList.remove('hidden');
+                container1D.classList.add('flex');
+                container2D.classList.add('hidden');
+                container2D.classList.remove('flex');
+            } else {
+                tab2D.className = "flex-1 py-2 rounded-xl font-medium transition flex items-center justify-center gap-1.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow";
+                tab1D.className = "flex-1 py-2 rounded-xl font-medium transition flex items-center justify-center gap-1.5 text-slate-400 hover:text-white";
+                container2D.classList.remove('hidden');
+                container2D.classList.add('flex');
+                container1D.classList.add('hidden');
+                container1D.classList.remove('flex');
+            }
+
+            updateDisplayedValueText();
+        }
+
+        function updateDisplayedValueText() {
+            const valDisplay = document.getElementById('barcodeValueDisplay');
+            const fsValDisplay = document.getElementById('fsBarcodeValue');
+
+            const activeVal = currentMode === '1d' ? lineData : qrData;
+            valDisplay.innerText = activeVal;
+            fsValDisplay.innerText = activeVal;
+        }
+
+        // Fallback Error Handler for logo.png
+        function handleImageError(img) {
+            img.onerror = null;
+            // High quality fallback SVG icon with dark rounded tile
+            img.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="25" fill="%230f172a"/><path d="M30 35 L50 20 L70 35 L70 65 L50 80 L30 65 Z" fill="none" stroke="%2338bdf8" stroke-width="7"/><circle cx="50" cy="50" r="10" fill="%2338bdf8"/></svg>';
+            
+            const statusText = document.getElementById('imageStatusText');
+            if (statusText) {
+                statusText.innerHTML = '로컬 이미지: <code class="text-amber-300 font-mono">logo.png</code> 미발견 (기본 로고 사용)';
+            }
+        }
+
+        // Timer Control
+        function startTimer() {
+            clearInterval(timerInterval);
+            countdownSeconds = 180;
+            updateTimerDisplay();
+
+            timerInterval = setInterval(() => {
+                countdownSeconds--;
+                if (countdownSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    showToast('보안 시간이 만료되어 바코드가 재생성되었습니다.');
+                    refreshBarcodeTimer();
+                } else {
+                    updateTimerDisplay();
+                }
+            }, 1000);
+        }
+
+        function refreshBarcodeTimer() {
+            startTimer();
+            showToast('유효 시간이 연장되었습니다.', 'fa-rotate-right', 'text-cyan-400');
+        }
+
+        function updateTimerDisplay() {
+            const mins = Math.floor(countdownSeconds / 60);
+            const secs = countdownSeconds % 60;
+            document.getElementById('timerText').innerText = 
+                `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        // Toggle Laser Beam Effect
+        function toggleScanBeam() {
+            const beam = document.getElementById('laserBeam');
+            const btnText = document.getElementById('scanBtnText');
+            const icon = document.getElementById('laserIcon');
+
+            isScanActive = !isScanActive;
+            if (isScanActive) {
+                beam.style.display = 'block';
+                btnText.innerText = '레이저 ON';
+                icon.className = 'fa-solid fa-bolt text-amber-400';
+                showToast('스캔 레이저 모드가 활성화되었습니다.');
+            } else {
+                beam.style.display = 'none';
+                btnText.innerText = '레이저 OFF';
+                icon.className = 'fa-solid fa-bolt text-slate-500';
+                showToast('스캔 레이저 모드가 꺼졌습니다.');
+            }
+        }
+
+        // Fullscreen High-Brightness Modal
+        function openFullscreenBarcode() {
+            const modal = document.getElementById('fullscreenModal');
+            const fs1D = document.getElementById('fsBarcode1DContainer');
+            const fs2D = document.getElementById('fsBarcode2DContainer');
+
+            if (currentMode === '1d') {
+                fs1D.classList.remove('hidden');
+                fs2D.classList.add('hidden');
+            } else {
+                fs2D.classList.remove('hidden');
+                fs1D.classList.add('hidden');
+            }
+
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modal.classList.add('opacity-100');
+        }
+
+        function closeFullscreenBarcode() {
+            const modal = document.getElementById('fullscreenModal');
+            modal.classList.remove('opacity-100');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        // Config Modal Controls
+        function openConfigModal() {
+            const modal = document.getElementById('configModal');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modal.children[0].classList.remove('translate-y-full');
+        }
+
+        function closeConfigModal() {
+            const modal = document.getElementById('configModal');
+            modal.children[0].classList.add('translate-y-full');
+            setTimeout(() => {
+                modal.classList.add('opacity-0', 'pointer-events-none');
+            }, 200);
+        }
+
+        // Apply Configuration Changes
+        function applyConfig() {
+            const titleVal = document.getElementById('inputTitle').value.trim();
+            const lineVal = document.getElementById('inputLineValue').value.trim();
+            const qrVal = document.getElementById('inputQRValue').value.trim();
+
+            if (titleVal) document.getElementById('displayTitle').innerText = titleVal;
+            if (lineVal) lineData = lineVal;
+            if (qrVal) qrData = qrVal;
+
+            if (isRevealed) {
+                renderBarcodes();
+            }
+
+            closeConfigModal();
+            showToast('바코드 설정이 적용되었습니다.');
+        }
+
+        // Copy Active Barcode Data
+        function copyBarcodeData() {
+            const targetVal = currentMode === '1d' ? lineData : qrData;
+
+            const dummy = document.createElement('textarea');
+            document.body.appendChild(dummy);
+            dummy.value = targetVal;
+            dummy.select();
+            document.execCommand('copy');
+            document.body.removeChild(dummy);
+
+            showToast(`바코드 데이터(${currentMode.toUpperCase()})가 복사되었습니다!`);
+        }
+
+        // Download Barcode as PNG Image
+        function downloadBarcodeImage() {
+            if (!isRevealed) {
+                showToast('먼저 바코드를 불러와 주세요!', 'fa-circle-exclamation', 'text-amber-400');
+                return;
+            }
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const width = 400;
+            const height = currentMode === '1d' ? 240 : 400;
+
+            canvas.width = width;
+            canvas.height = height;
+
+            // Draw clean background
+            ctx.fillStyle = "#ffffff";
+            ctx.beginPath();
+            ctx.roundRect(0, 0, width, height, 20);
+            ctx.fill();
+
+            if (currentMode === '1d') {
+                const svgElem = document.getElementById('lineBarcode');
+                const xml = new XMLSerializer().serializeToString(svgElem);
+                const svg64 = btoa(unescape(encodeURIComponent(xml)));
+                const image64 = 'data:image/svg+xml;base64,' + svg64;
+
+                const img = new Image();
+                img.onload = function () {
+                    ctx.drawImage(img, 30, 40, 340, 110);
+
+                    // Add readable text
+                    ctx.fillStyle = "#0f172a";
+                    ctx.font = "bold 18px JetBrains Mono, monospace";
+                    ctx.textAlign = "center";
+                    ctx.fillText(lineData, width / 2, 190);
+
+                    triggerDownload(canvas, 'line_barcode_pass.png');
+                };
+                img.src = image64;
+            } else {
+                const qrCanvas = document.querySelector('#qrcode canvas');
+                if (qrCanvas) {
+                    ctx.drawImage(qrCanvas, 75, 40, 250, 250);
+
+                    // Add readable text
+                    ctx.fillStyle = "#0f172a";
+                    ctx.font = "bold 14px JetBrains Mono, monospace";
+                    ctx.textAlign = "center";
+                    ctx.fillText(qrData, width / 2, 335);
+
+                    triggerDownload(canvas, 'qr_barcode_pass.png');
+                }
+            }
+        }
+
+        function triggerDownload(canvas, filename) {
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            showToast('바코드 이미지가 저장되었습니다!');
+        }
+
+        // Realtime Timestamp Update
+        function updateTimestamp() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+
+            document.getElementById('timestampText').innerText = `${year}.${month}.${day} ${hours}:${minutes}`;
+        }
+
+        // Toast Helper Function
+        function showToast(message, iconClass = 'fa-circle-check', iconColor = 'text-emerald-400') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.innerText = message;
+            toastIcon.className = `fa-solid ${iconClass} ${iconColor} text-sm`;
+
+            toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4');
+            toast.classList.add('opacity-100', 'translate-y-0');
+
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-4');
+            }, 2500);
+        }
+    </script>
+</body>
+</html>
