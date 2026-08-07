@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSL도서관 - 스마트 도서관 웹 플랫폼</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts (Inter & Noto Sans KR) -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Noto Sans KR', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#2563eb',
+                            600: '#1d4ed8',
+                            700: '#1e40af',
+                            800: '#1e3a8a',
+                            900: '#172554',
+                        },
+                        amberAccent: '#f59e0b'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 9999px;
+        }
+        .tab-active {
+            border-bottom: 3px solid #2563eb;
+            color: #2563eb;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- Top Announcement Bar -->
+    <div class="bg-brand-900 text-slate-200 text-xs sm:text-sm py-2 px-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-2 overflow-hidden whitespace-nowrap">
+                <span class="bg-amber-500 text-xs font-bold text-slate-900 px-2 py-0.5 rounded-full">공지</span>
+                <span class="truncate">2026년 여름 독서교실 참가자 모집 안내 (8월 10일~20일)</span>
+            </div>
+            <div class="hidden md:flex items-center gap-4 text-xs shrink-0">
+                <span><i class="fa-regular fa-clock me-1"></i> 오늘 운영: <strong>09:00 - 18:00</strong></span>
+                <span class="text-emerald-400"><i class="fa-solid fa-circle-check me-1"></i> 정상 개관중</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Header & Navigation -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <!-- Logo -->
+                <div class="flex items-center gap-3 cursor-pointer" onclick="switchNav('main')">
+                    <div class="w-12 h-12 bg-brand-600 text-white rounded-xl flex items-center justify-center text-2xl shadow-md shadow-brand-200">
+                        <i class="fa-solid fa-book-bookmark"></i>
+                    </div>
+                    <div>
+                        <span class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">JSL<span class="text-brand-600">도서관</span></span>
+                        <p class="text-xs text-slate-500 font-medium">JSL Smart Library Service</p>
+                    </div>
+                </div>
+
+                <!-- Desktop Nav Navigation Links -->
+                <nav class="hidden lg:flex items-center gap-8 text-slate-700 font-medium text-base">
+                    <button onclick="switchNav('main')" class="hover:text-brand-600 transition">통합검색</button>
+                    <button onclick="switchNav('info')" class="hover:text-brand-600 transition">자료이용안내</button>
+                    <button onclick="switchNav('request')" class="hover:text-brand-600 transition">희망도서/상호대차</button>
+                    <button onclick="switchNav('digital')" class="hover:text-brand-600 transition">전자자료DB</button>
+                    <button onclick="switchNav('mypage')" class="hover:text-brand-600 transition flex items-center gap-1 text-brand-600 font-semibold">
+                        <i class="fa-regular fa-user"></i> 마이페이지
+                    </button>
+                </nav>
+
+                <!-- User Quick Info / Mobile Toggle -->
+                <div class="flex items-center gap-3">
+                    <div class="hidden sm:flex items-center gap-2 bg-slate-100 p-1.5 rounded-lg border border-slate-200 text-xs">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span class="font-semibold text-slate-700">김도서 님 로그인중</span>
+                    </div>
+                    <button onclick="switchNav('mypage')" class="lg:hidden bg-brand-50 text-brand-600 p-2.5 rounded-lg border border-brand-200">
+                        <i class="fa-solid fa-user-gear"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Secondary Submenu Bar for Quick Mobile Access -->
+        <div class="bg-slate-100 border-t border-slate-200 lg:hidden px-4 py-2 flex justify-around text-xs font-medium text-slate-600 overflow-x-auto whitespace-nowrap">
+            <button onclick="switchNav('main')" class="px-2 py-1">통합검색</button>
+            <button onclick="switchNav('info')" class="px-2 py-1">이용안내</button>
+            <button onclick="switchNav('request')" class="px-2 py-1">희망도서</button>
+            <button onclick="switchNav('digital')" class="px-2 py-1">전자자료</button>
+            <button onclick="switchNav('mypage')" class="px-2 py-1 text-brand-600 font-bold">마이페이지</button>
+        </div>
+    </header>
+
+    <main class="flex-grow">
+        <!-- PAGE VIEW: MAIN (Search & Landing) -->
+        <div id="page-main" class="page-view space-y-12 pb-12">
+            
+            <!-- Hero Search Section -->
+            <section class="bg-gradient-to-br from-brand-900 via-brand-800 to-slate-900 text-white py-14 px-4 relative overflow-hidden">
+                <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
+                <div class="max-w-4xl mx-auto relative z-10 text-center space-y-6">
+                    <span class="bg-brand-700/60 text-brand-100 px-3 py-1 rounded-full text-xs font-semibold tracking-wide uppercase border border-brand-500/30">JSL도서관 통합자료 검색</span>
+                    <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight">도서, 논문, 전자책, VOD를 한 번에 탐색하세요</h1>
+
+                    <!-- Integrated Search Box Card -->
+                    <div class="bg-white rounded-2xl p-3 sm:p-4 shadow-2xl text-slate-800">
+                        <!-- Search Category Tabs -->
+                        <div class="flex flex-wrap gap-1 sm:gap-2 border-b border-slate-200 pb-3 mb-3 text-xs sm:text-sm font-semibold text-slate-600">
+                            <button class="search-tab px-3 py-1.5 rounded-lg bg-brand-600 text-white" onclick="setSearchCategory(this, 'all')">전체 통합검색</button>
+                            <button class="search-tab px-3 py-1.5 rounded-lg hover:bg-slate-100" onclick="setSearchCategory(this, 'book')">일반도서</button>
+                            <button class="search-tab px-3 py-1.5 rounded-lg hover:bg-slate-100" onclick="setSearchCategory(this, 'ebook')">전자책/오디오북</button>
+                            <button class="search-tab px-3 py-1.5 rounded-lg hover:bg-slate-100" onclick="setSearchCategory(this, 'paper')">학술논문/DB</button>
+                            <button class="search-tab px-3 py-1.5 rounded-lg hover:bg-slate-100" onclick="setSearchCategory(this, 'vod')">VOD/시청각</button>
+                        </div>
+
+                        <!-- Main Input Area -->
+                        <form onsubmit="handleMainSearch(event)" class="flex flex-col sm:flex-row gap-2">
+                            <div class="relative flex-grow">
+                                <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
+                                <input type="text" id="mainSearchInput" placeholder="서명, 저자, 출판사, 키워드를 입력하세요 (예: 인공지능, 트렌드 2026)" class="w-full pl-11 pr-4 py-3.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm sm:text-base">
+                            </div>
+                            <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white font-bold px-8 py-3.5 rounded-xl transition shadow-md flex items-center justify-center gap-2 text-sm sm:text-base shrink-0">
+                                <span>검색</span>
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+                        </form>
+
+                        <!-- Sub-options & Detailed OPAC Modal Button -->
+                        <div class="flex justify-between items-center mt-3 pt-2 text-xs text-slate-500 border-t border-slate-100">
+                            <div class="flex gap-4">
+                                <label class="flex items-center gap-1 cursor-pointer">
+                                    <input type="checkbox" checked class="rounded text-brand-600 focus:ring-brand-500"> 대출가능 도서만 보기
+                                </label>
+                            </div>
+                            <button onclick="openModal('modal-opac')" class="text-brand-600 hover:underline font-semibold flex items-center gap-1">
+                                <i class="fa-solid fa-sliders"></i> 상세 검색 (상세 OPAC)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Popular Search Terms -->
+                    <div class="flex items-center justify-center gap-2 flex-wrap text-xs text-slate-300">
+                        <span class="font-semibold text-amber-400"><i class="fa-solid fa-fire me-1"></i>인기 검색어:</span>
+                        <a href="#" onclick="quickSearch('생성형 AI')" class="bg-white/10 hover:bg-white/20 px-2.5 py-1 rounded-md transition">생성형 AI</a>
+                        <a href="#" onclick="quickSearch('파이썬')" class="bg-white/10 hover:bg-white/20 px-2.5 py-1 rounded-md transition">파이썬</a>
+                        <a href="#" onclick="quickSearch('세이노의 가르침')" class="bg-white/10 hover:bg-white/20 px-2.5 py-1 rounded-md transition">세이노의 가르침</a>
+                        <a href="#" onclick="quickSearch('역사')" class="bg-white/10 hover:bg-white/20 px-2.5 py-1 rounded-md transition">역사</a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Dashboard Grid: Hours, Calendar, Notices -->
+            <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    
+                    <!-- Card 1: Today Operating Status & Quick Services -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-xs font-bold text-brand-600 uppercase tracking-wider">Operating Info</span>
+                                <h2 class="text-xl font-bold text-slate-900">오늘의 도서관 운영</h2>
+                            </div>
+                            <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full border border-emerald-200">개관중</span>
+                        </div>
+
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-slate-600">종합자료실/어린이자료실</span>
+                                <span class="font-bold text-slate-800">09:00 ~ 18:00</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-slate-600">열람실 (자습실)</span>
+                                <span class="font-bold text-slate-800">08:00 ~ 22:00</span>
+                            </div>
+                            <div class="flex justify-between text-sm border-t border-slate-200 pt-2 text-rose-600 font-semibold">
+                                <span>정기 휴관일</span>
+                                <span>매주 월요일 / 법정공휴일</span>
+                            </div>
+                        </div>
+
+                        <!-- Quick Action Buttons -->
+                        <div class="grid grid-cols-2 gap-3 pt-1">
+                            <button onclick="openModal('modal-seat')" class="p-3 bg-brand-50 hover:bg-brand-100 text-brand-700 rounded-xl text-left border border-brand-200 transition">
+                                <i class="fa-solid fa-chair text-lg mb-1 block text-brand-600"></i>
+                                <div class="font-bold text-sm">좌석/시설 예약</div>
+                                <div class="text-xs text-brand-600/80">실시간 좌석 확인</div>
+                            </button>
+                            <button onclick="switchNav('request')" class="p-3 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-xl text-left border border-amber-200 transition">
+                                <i class="fa-solid fa-hand-holding-hand text-lg mb-1 block text-amber-600"></i>
+                                <div class="font-bold text-sm">희망도서 신청</div>
+                                <div class="text-xs text-amber-700/80">월 최대 3권</div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Card 2: Interactive Monthly Holiday Calendar -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <span class="text-xs font-bold text-brand-600 uppercase tracking-wider">Calendar</span>
+                                <h2 class="text-xl font-bold text-slate-900">이번 달 휴관일 달력</h2>
+                            </div>
+                            <span class="text-sm font-bold text-slate-700 bg-slate-100 px-3 py-1 rounded-lg">2026년 8월</span>
+                        </div>
+
+                        <!-- Simple Calendar Grid -->
+                        <div class="border border-slate-200 rounded-xl p-3 bg-slate-50/50">
+                            <div class="grid grid-cols-7 gap-1 text-center text-xs font-bold text-slate-500 mb-2">
+                                <span class="text-rose-500">일</span>
+                                <span>월</span>
+                                <span>화</span>
+                                <span>수</span>
+                                <span>목</span>
+                                <span>금</span>
+                                <span class="text-blue-500">토</span>
+                            </div>
+                            <!-- Days -->
+                            <div class="grid grid-cols-7 gap-1 text-center text-xs font-medium text-slate-700">
+                                <!-- Blank leading -->
+                                <span class="p-1.5 text-slate-300">26</span>
+                                <span class="p-1.5 text-slate-300">27</span>
+                                <span class="p-1.5 text-slate-300">28</span>
+                                <span class="p-1.5 text-slate-300">29</span>
+                                <span class="p-1.5 text-slate-300">30</span>
+                                <span class="p-1.5 text-slate-300">31</span>
+                                <span class="p-1.5 text-blue-600 font-bold">1</span>
+
+                                <span class="p-1.5 text-rose-500 font-bold">2</span>
+                                <span class="p-1.5 bg-rose-100 text-rose-700 rounded-md font-bold" title="정기휴관일">3</span>
+                                <span class="p-1.5">4</span>
+                                <span class="p-1.5">5</span>
+                                <span class="p-1.5 bg-brand-600 text-white font-bold rounded-md ring-2 ring-brand-300" title="오늘">6</span>
+                                <span class="p-1.5">7</span>
+                                <span class="p-1.5 text-blue-600">8</span>
+
+                                <span class="p-1.5 text-rose-500 font-bold">9</span>
+                                <span class="p-1.5 bg-rose-100 text-rose-700 rounded-md font-bold" title="정기휴관일">10</span>
+                                <span class="p-1.5">11</span>
+                                <span class="p-1.5">12</span>
+                                <span class="p-1.5">13</span>
+                                <span class="p-1.5">14</span>
+                                <span class="p-1.5 bg-rose-100 text-rose-700 rounded-md font-bold" title="광복절 공휴일">15</span>
+
+                                <span class="p-1.5 text-rose-500 font-bold">16</span>
+                                <span class="p-1.5 bg-rose-100 text-rose-700 rounded-md font-bold" title="정기휴관일">17</span>
+                                <span class="p-1.5">18</span>
+                                <span class="p-1.5">19</span>
+                                <span class="p-1.5">20</span>
+                                <span class="p-1.5">21</span>
+                                <span class="p-1.5 text-blue-600">22</span>
+
+                                <span class="p-1.5 text-rose-500 font-bold">23</span>
+                                <span class="p-1.5 bg-rose-100 text-rose-700 rounded-md font-bold" title="정기휴관일">24</span>
+                                <span class="p-1.5">25</span>
+                                <span class="p-1.5">26</span>
+                                <span class="p-1.5">27</span>
+                                <span class="p-1.5">28</span>
+                                <span class="p-1.5 text-blue-600">29</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-4 text-xs text-slate-500 justify-center">
+                            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 bg-rose-200 rounded-sm inline-block"></span> 휴관일</span>
+                            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 bg-brand-600 rounded-sm inline-block"></span> 오늘</span>
+                        </div>
+                    </div>
+
+                    <!-- Card 3: Key Announcements & Popup Trigger -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <span class="text-xs font-bold text-brand-600 uppercase tracking-wider">Notice</span>
+                                <h2 class="text-xl font-bold text-slate-900">주요 공지사항</h2>
+                            </div>
+                            <button onclick="openModal('modal-notice-pop')" class="text-xs font-bold text-brand-600 hover:underline">
+                                팝업공지 보기 <i class="fa-solid fa-window-restore"></i>
+                            </button>
+                        </div>
+
+                        <ul class="divide-y divide-slate-100 text-sm">
+                            <li class="py-2.5 flex justify-between items-center group cursor-pointer" onclick="openModal('modal-notice-pop')">
+                                <span class="text-slate-700 group-hover:text-brand-600 truncate font-medium">[안내] 8월 광복절 연휴 대출 기간 자동 연장</span>
+                                <span class="text-xs text-slate-400 shrink-0 ml-2">08.05</span>
+                            </li>
+                            <li class="py-2.5 flex justify-between items-center group cursor-pointer">
+                                <span class="text-slate-700 group-hover:text-brand-600 truncate font-medium">[행사] 여름방학 어린이 인공지능 독서교실</span>
+                                <span class="text-xs text-slate-400 shrink-0 ml-2">08.01</span>
+                            </li>
+                            <li class="py-2.5 flex justify-between items-center group cursor-pointer">
+                                <span class="text-slate-700 group-hover:text-brand-600 truncate font-medium">[점검] 8월 12일 전자도서관 서버 점검 안내</span>
+                                <span class="text-xs text-slate-400 shrink-0 ml-2">07.28</span>
+                            </li>
+                            <li class="py-2.5 flex justify-between items-center group cursor-pointer">
+                                <span class="text-slate-700 group-hover:text-brand-600 truncate font-medium">[신착] 2026년 3분기 희망도서 150권 입고</span>
+                                <span class="text-xs text-slate-400 shrink-0 ml-2">07.20</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- Recommended & New Books Showcase -->
+            <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-900">JSL도서관 추천 & 신착 도서</h2>
+                            <p class="text-sm text-slate-500">이번 주 사서가 직접 추천하는 이달의 도서입니다.</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="px-3 py-1.5 text-xs font-bold rounded-lg bg-brand-600 text-white">사서 추천</button>
+                            <button class="px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">인기 대출작</button>
+                            <button class="px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">신규 입고</button>
+                        </div>
+                    </div>
+
+                    <!-- Book Grid -->
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 sm:gap-6">
+                        <!-- Book Card 1 -->
+                        <div class="space-y-2 group cursor-pointer">
+                            <div class="aspect-[3/4] bg-slate-200 rounded-xl overflow-hidden shadow-sm group-hover:shadow-md transition relative">
+                                <img src="https://placehold.co/300x400/1e3a8a/ffffff?text=AI+Era+2026" alt="AI 시대" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                                <span class="absolute top-2 left-2 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">대출가능</span>
+                            </div>
+                            <h3 class="font-bold text-sm text-slate-900 truncate group-hover:text-brand-600">AI 시대의 생각법</h3>
+                            <p class="text-xs text-slate-500">김기술 저 | JSL출판</p>
+                            <span class="inline-block text-[11px] text-slate-400 font-mono">청구기호: 004.73-김15아</span>
+                        </div>
+                        <!-- Book Card 2 -->
+                        <div class="space-y-2 group cursor-pointer">
+                            <div class="aspect-[3/4] bg-slate-200 rounded-xl overflow-hidden shadow-sm group-hover:shadow-md transition relative">
+                                <img src="https://placehold.co/300x400/047857/ffffff?text=Mind+Library" alt="마인드 라이브러리" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                                <span class="absolute top-2 left-2 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">대출가능</span>
+                            </div>
+                            <h3 class="font-bold text-sm text-slate-900 truncate group-hover:text-brand-600">마음의 도서관</h3>
+                            <p class="text-xs text-slate-500">이감성 저 | 마인드북스</p>
+                            <span class="inline-block text-[11px] text-slate-400 font-mono">청구기호: 813.7-이89마</span>
+                        </div>
+                        <!-- Book Card 3 -->
+                        <div class="space-y-2 group cursor-pointer">
+                            <div class="aspect-[3/4] bg-slate-200 rounded-xl overflow-hidden shadow-sm group-hover:shadow-md transition relative">
+                                <img src="https://placehold.co/300x400/b45309/ffffff?text=Modern+History" alt="현대사" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                                <span class="absolute top-2 left-2 bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">대출중 (8/10)</span>
+                            </div>
+                            <h3 class="font-bold text-sm text-slate-900 truncate group-hover:text-brand-600">쉽게 읽는 현대사</h3>
+                            <p class="text-xs text-slate-500">박역사 저 | 역사i</p>
+                            <span class="inline-block text-[11px] text-slate-400 font-mono">청구기호: 911.07-박72쉬</span>
+                        </div>
+                        <!-- Book Card 4 -->
+                        <div class="space-y-2 group cursor-pointer">
+                            <div class="aspect-[3/4] bg-slate-200 rounded-xl overflow-hidden shadow-sm group-hover:shadow-md transition relative">
+                                <img src="https://placehold.co/300x400/4338ca/ffffff?text=Cosmos+Journey" alt="코스모스" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                                <span class="absolute top-2 left-2 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">대출가능</span>
+                            </div>
+                            <h3 class="font-bold text-sm text-slate-900 truncate group-hover:text-brand-600">우주 탐사의 미래</h3>
+                            <p class="text-xs text-slate-500">최우주 저 | 사이언스랩</p>
+                            <span class="inline-block text-[11px] text-slate-400 font-mono">청구기호: 440.1-최34우</span>
+                        </div>
+                        <!-- Book Card 5 -->
+                        <div class="space-y-2 group cursor-pointer">
+                            <div class="aspect-[3/4] bg-slate-200 rounded-xl overflow-hidden shadow-sm group-hover:shadow-md transition relative">
+                                <img src="https://placehold.co/300x400/0f172a/ffffff?text=Data+Science" alt="데이터과학" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                                <span class="absolute top-2 left-2 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">대출가능</span>
+                            </div>
+                            <h3 class="font-bold text-sm text-slate-900 truncate group-hover:text-brand-600">데이터로 읽는 세상</h3>
+                            <p class="text-xs text-slate-500">정데이터 저 | 정보출판</p>
+                            <span class="inline-block text-[11px] text-slate-400 font-mono">청구기호: 005.1-정55데</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- PAGE VIEW: INFO (자료이용안내) -->
+        <div id="page-info" class="page-view hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+            <div>
+                <h1 class="text-3xl font-extrabold text-slate-900">자료 이용 안내</h1>
+                <p class="text-slate-600 mt-1">JSL도서관의 대출, 반납, 연장 및 시설 이용 규정을 안내합니다.</p>
+            </div>
+
+            <!-- Rules Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <div class="w-10 h-10 bg-brand-100 text-brand-600 rounded-xl flex items-center justify-center text-xl font-bold">1</div>
+                    <h3 class="text-lg font-bold text-slate-900">대출 권수 및 기간</h3>
+                    <ul class="text-sm text-slate-600 space-y-2 list-disc list-inside">
+                        <li><strong>일반 회원:</strong> 1인당 5권 / 14일간</li>
+                        <li><strong>우수 회원:</strong> 1인당 7권 / 21일간</li>
+                        <li><strong>시청각 자료(VOD):</strong> 1인당 2점 / 7일간</li>
+                    </ul>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <div class="w-10 h-10 bg-brand-100 text-brand-600 rounded-xl flex items-center justify-center text-xl font-bold">2</div>
+                    <h3 class="text-lg font-bold text-slate-900">반납 연장 및 예약</h3>
+                    <ul class="text-sm text-slate-600 space-y-2 list-disc list-inside">
+                        <li><strong>연장:</strong> 1회에 한해 7일 연장 가능 (예약자가 없는 도서만 가능)</li>
+                        <li><strong>예약:</strong> 대출 중인 도서에 한해 1인당 3권까지 사전 예약 가능</li>
+                        <li><strong>자동 연장:</strong> 휴관일인 경우 다음 개관일로 자동 이월</li>
+                    </ul>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <div class="w-10 h-10 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center text-xl font-bold">3</div>
+                    <h3 class="text-lg font-bold text-slate-900">연체 및 제재 규정</h3>
+                    <ul class="text-sm text-slate-600 space-y-2 list-disc list-inside">
+                        <li><strong>대출 정지:</strong> 연체 일수만큼 대출이 정지됩니다.</li>
+                        <li><strong>연체료:</strong> 연체료 제도는 없으며, 정지 기간으로 대체됩니다.</li>
+                        <li><strong>무인반납함:</strong> 도서관 입구 무인반납함 24시간 운영</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Library Space Map Overview -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                <h3 class="text-xl font-bold text-slate-900">층별 안내 (Floor Map)</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <span class="font-bold text-brand-600">3F</span> <span class="font-bold text-slate-800">자율 열람실 & 스터디룸</span>
+                        <p class="text-xs text-slate-500 mt-1">노트북 존, 디지털 열람석, 스터디룸 (사전예약 필수)</p>
+                    </div>
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <span class="font-bold text-brand-600">2F</span> <span class="font-bold text-slate-800">종합자료실 & 학술DB</span>
+                        <p class="text-xs text-slate-500 mt-1">일반도서, 학술지, 전자자료 검색 PC, 무인 대출반납기</p>
+                    </div>
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <span class="font-bold text-brand-600">1F</span> <span class="font-bold text-slate-800">어린이도서관 & 카페</span>
+                        <p class="text-xs text-slate-500 mt-1">유아/어린이 자료실, 다문화 코너, 안내데스크, 휴게카페</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE VIEW: REQUEST (희망도서 & 상호대차 신청) -->
+        <div id="page-request" class="page-view hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+            <div>
+                <h1 class="text-3xl font-extrabold text-slate-900">희망도서 & 상호대차 신청</h1>
+                <p class="text-slate-600 mt-1">도서관에 없는 자료를 직접 신청하거나 다른 지역 도서관의 책을 신청하세요.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Hope Book Request Form -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <div class="flex items-center gap-2 text-brand-600 font-bold">
+                        <i class="fa-solid fa-book-medical text-xl"></i>
+                        <h2 class="text-xl font-bold text-slate-900">희망도서 신청하기</h2>
+                    </div>
+                    <form onsubmit="handleHopeBookSubmit(event)" class="space-y-4 text-sm">
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">도서명 <span class="text-rose-500">*</span></label>
+                            <input type="text" id="hopeTitle" required placeholder="원하는 도서의 정확한 서명을 입력하세요" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">저자 <span class="text-rose-500">*</span></label>
+                                <input type="text" id="hopeAuthor" required placeholder="저자명" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">출판사</label>
+                                <input type="text" id="hopePublisher" placeholder="출판사명" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">ISBN 번호</label>
+                            <input type="text" placeholder="13자리 ISBN (선택)" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">신청 사유</label>
+                            <textarea rows="2" placeholder="신청 목적이나 사유를 간단히 적어주세요" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-brand-500 focus:outline-none"></textarea>
+                        </div>
+                        <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 rounded-lg transition shadow">신청서 제출하기</button>
+                    </form>
+                </div>
+
+                <!-- Interlibrary Loan Request Info -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <div class="flex items-center gap-2 text-amber-600 font-bold">
+                        <i class="fa-solid fa-truck-ramp-box text-xl"></i>
+                        <h2 class="text-xl font-bold text-slate-900">타기관 상호대차 신청</h2>
+                    </div>
+                    <p class="text-sm text-slate-600 leading-relaxed">
+                        JSL도서관에 소장되어 있지 않으나 협약된 인근 지자체 도서관 및 대학도서관에 있는 자료를 우리 도서관으로 배송받아 대출할 수 있는 서비스입니다.
+                    </p>
+                    <div class="bg-amber-50 p-4 rounded-xl border border-amber-200 text-xs text-amber-800 space-y-1">
+                        <p class="font-bold"><i class="fa-solid fa-circle-info me-1"></i> 상호대차 이용 안내</p>
+                        <p>· 신청 가능 권수: 1인당 최대 3권</p>
+                        <p>· 소요 시간: 신청 후 약 2~3일 소요 (도착 시 문자 안내)</p>
+                        <p>· 수령 장소: JSL도서관 2층 안내데스크</p>
+                    </div>
+                    <button onclick="showToast('상호대차 통합 시스템으로 연결합니다.')" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 rounded-lg transition">협력도서관 자료 상호대차 신청</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE VIEW: DIGITAL (전자자료 / 구독 DB) -->
+        <div id="page-digital" class="page-view hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+            <div>
+                <h1 class="text-3xl font-extrabold text-slate-900">전자자료 / 구독 DB Portal</h1>
+                <p class="text-slate-600 mt-1">전자책, 오디오북, 국내외 학술논문 및 온라인 강좌를 바로 이용할 수 있습니다.</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- DB Card 1 -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3 hover:border-brand-300 transition">
+                    <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center text-2xl">
+                        <i class="fa-solid fa-tablet-screen-button"></i>
+                    </div>
+                    <h3 class="font-bold text-lg text-slate-900">JSL 전자도서관</h3>
+                    <p class="text-xs text-slate-500">교보문고, 알라딘 연동 e-Book 3만여 권 제공 (모바일 앱 연동)</p>
+                    <button onclick="showToast('전자책 도서관으로 이동합니다.')" class="w-full bg-slate-100 hover:bg-brand-50 hover:text-brand-600 text-slate-700 font-bold py-2 rounded-lg text-xs transition">바로가기 <i class="fa-solid fa-arrow-up-right-from-square ms-1"></i></button>
+                </div>
+
+                <!-- DB Card 2 -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3 hover:border-brand-300 transition">
+                    <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center text-2xl">
+                        <i class="fa-solid fa-headphones"></i>
+                    </div>
+                    <h3 class="font-bold text-lg text-slate-900">오디오북 (Audiobook)</h3>
+                    <p class="text-xs text-slate-500">귀로 듣는 베스트셀러 및 시/소설 2,000여 편 무료 스트리밍</p>
+                    <button onclick="showToast('오디오북 플레이어로 이동합니다.')" class="w-full bg-slate-100 hover:bg-emerald-50 hover:text-emerald-600 text-slate-700 font-bold py-2 rounded-lg text-xs transition">바로가기 <i class="fa-solid fa-arrow-up-right-from-square ms-1"></i></button>
+                </div>
+
+                <!-- DB Card 3 -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3 hover:border-brand-300 transition">
+                    <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center text-2xl">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                    </div>
+                    <h3 class="font-bold text-lg text-slate-900">DBpia / RISS 학술지</h3>
+                    <p class="text-xs text-slate-500">국내외 학술 논문 및 연구 자료 관내/관외 원문 무료 열람</p>
+                    <button onclick="showToast('학술DB 인증 페이지로 연결합니다.')" class="w-full bg-slate-100 hover:bg-purple-50 hover:text-purple-600 text-slate-700 font-bold py-2 rounded-lg text-xs transition">바로가기 <i class="fa-solid fa-arrow-up-right-from-square ms-1"></i></button>
+                </div>
+
+                <!-- DB Card 4 -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3 hover:border-brand-300 transition">
+                    <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center text-2xl">
+                        <i class="fa-solid fa-display"></i>
+                    </div>
+                    <h3 class="font-bold text-lg text-slate-900">온라인 어학 & 강좌</h3>
+                    <p class="text-xs text-slate-500">외국어, 자격증, IT 프로그래밍 온라인 무료 동영상 강좌</p>
+                    <button onclick="showToast('온라인 클래스룸으로 이동합니다.')" class="w-full bg-slate-100 hover:bg-amber-50 hover:text-amber-600 text-slate-700 font-bold py-2 rounded-lg text-xs transition">바로가기 <i class="fa-solid fa-arrow-up-right-from-square ms-1"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE VIEW: MYPAGE (마이페이지 - 개인화 서비스) -->
+        <div id="page-mypage" class="page-view hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+            
+            <!-- User Profile Summary Header -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div class="flex items-center gap-4">
+                    <div class="w-16 h-16 bg-brand-600 text-white rounded-2xl flex items-center justify-center text-2xl font-bold shadow-md">
+                        김
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h1 class="text-2xl font-bold text-slate-900">김도서 님</h1>
+                            <span class="bg-brand-100 text-brand-700 text-xs font-bold px-2.5 py-0.5 rounded-full">일반회원</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1">회원번호: JSL-2026-08192 | 대출가능 권수: <strong class="text-brand-600">3권 / 총 5권</strong></p>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap gap-4 text-center text-xs">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 min-w-[100px]">
+                        <span class="text-slate-500 block">대출 중</span>
+                        <span id="stat-borrowed" class="text-lg font-bold text-brand-600">2권</span>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 min-w-[100px]">
+                        <span class="text-slate-500 block">연체 도서</span>
+                        <span class="text-lg font-bold text-emerald-600">0권</span>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 min-w-[100px]">
+                        <span class="text-slate-500 block">희망도서 신청</span>
+                        <span id="stat-request" class="text-lg font-bold text-amber-600">1건</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MyPage Navigation Tabs -->
+            <div class="border-b border-slate-200 flex gap-6 overflow-x-auto text-sm font-semibold text-slate-500">
+                <button class="mypage-tab tab-active pb-3" onclick="switchMyPageTab(this, 'sec-loans')">
+                    <i class="fa-solid fa-book-reader me-1"></i> 내 대출 현황
+                </button>
+                <button class="mypage-tab pb-3 hover:text-slate-800" onclick="switchMyPageTab(this, 'sec-history')">
+                    <i class="fa-solid fa-clock-rotate-left me-1"></i> 이용 역사 / 관심 도서
+                </button>
+                <button class="mypage-tab pb-3 hover:text-slate-800" onclick="switchMyPageTab(this, 'sec-applications')">
+                    <i class="fa-solid fa-list-check me-1"></i> 신청 내역 확인
+                </button>
+                <button class="mypage-tab pb-3 hover:text-slate-800" onclick="switchMyPageTab(this, 'sec-penalties')">
+                    <i class="fa-solid fa-shield-halved me-1"></i> 연체 및 제재 내역
+                </button>
+            </div>
+
+            <!-- SUB-TAB 1: 내 대출 현황 (Current Loans) -->
+            <div id="sec-loans" class="mypage-sec space-y-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-lg text-slate-900">현재 대출 중인 도서 (2권)</h3>
+                    <span class="text-xs text-slate-500">* 연장은 반납예정일 3일 전부터 가능합니다 (1회 7일).</span>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-xs text-slate-500 uppercase">
+                                    <th class="p-4">도서 정보</th>
+                                    <th class="p-4">대출일</th>
+                                    <th class="p-4">반납 예정일</th>
+                                    <th class="p-4">상태</th>
+                                    <th class="p-4 text-center">연장 처리</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <tr id="loan-row-1">
+                                    <td class="p-4">
+                                        <div class="font-bold text-slate-900">클린 코드 (Clean Code)</div>
+                                        <div class="text-xs text-slate-500">로버트 C. 마틴 | 청구기호 005.133-마89클</div>
+                                    </td>
+                                    <td class="p-4 text-slate-600">2026-08-01</td>
+                                    <td class="p-4 font-bold text-slate-800" id="due-date-1">2026-08-15</td>
+                                    <td class="p-4">
+                                        <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2 py-1 rounded-full">정상 대출중</span>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <button onclick="extendLoan('loan-row-1', 'due-date-1', this)" class="bg-brand-600 hover:bg-brand-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow transition">
+                                            연장 신청
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr id="loan-row-2">
+                                    <td class="p-4">
+                                        <div class="font-bold text-slate-900">사피엔스 (Sapiens)</div>
+                                        <div class="text-xs text-slate-500">유발 하라리 | 청구기호 909-하79사</div>
+                                    </td>
+                                    <td class="p-4 text-slate-600">2026-07-28</td>
+                                    <td class="p-4 font-bold text-rose-600" id="due-date-2">2026-08-11 (D-5)</td>
+                                    <td class="p-4">
+                                        <span class="bg-amber-100 text-amber-800 text-xs font-bold px-2 py-1 rounded-full">반납임박</span>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <button onclick="extendLoan('loan-row-2', 'due-date-2', this)" class="bg-brand-600 hover:bg-brand-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow transition">
+                                            연장 신청
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUB-TAB 2: 이용 역사 / 관심 도서 -->
+            <div id="sec-history" class="mypage-sec hidden space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Borrowing History List -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                        <h3 class="font-bold text-lg text-slate-900 flex items-center justify-between">
+                            <span>과거 대출 기록</span>
+                            <span class="text-xs font-normal text-slate-500">최근 1년 간 총 12권</span>
+                        </h3>
+                        <ul class="divide-y divide-slate-100 text-sm">
+                            <li class="py-3 flex justify-between items-center">
+                                <div>
+                                    <p class="font-bold text-slate-800">트렌드 코리아 2026</p>
+                                    <p class="text-xs text-slate-500">반납일: 2026-07-15</p>
+                                </div>
+                                <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md">반납 완료</span>
+                            </li>
+                            <li class="py-3 flex justify-between items-center">
+                                <div>
+                                    <p class="font-bold text-slate-800">지적 대화를 위한 넓고 얕은 지식</p>
+                                    <p class="text-xs text-slate-500">반납일: 2026-06-20</p>
+                                </div>
+                                <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md">반납 완료</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Wishlist (관심도서) -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                        <h3 class="font-bold text-lg text-slate-900 flex items-center justify-between">
+                            <span>관심 도서 (위시리스트)</span>
+                            <span class="text-xs font-normal text-slate-500">찜한 책 2권</span>
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center text-sm">
+                                <div>
+                                    <p class="font-bold text-slate-800">인공지능 생태계의 미래</p>
+                                    <p class="text-xs text-emerald-600 font-semibold"><i class="fa-solid fa-circle-check"></i> 대출 가능</p>
+                                </div>
+                                <button onclick="showToast('대출 예약이 완료되었습니다.')" class="bg-brand-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold">예약하기</button>
+                            </div>
+                            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center text-sm">
+                                <div>
+                                    <p class="font-bold text-slate-800">돈의 속성</p>
+                                    <p class="text-xs text-rose-500 font-semibold"><i class="fa-solid fa-clock"></i> 대출중 (예약 1명)</p>
+                                </div>
+                                <button onclick="showToast('예약 대기자로 등록되었습니다.')" class="bg-slate-800 text-white text-xs px-3 py-1.5 rounded-lg font-bold">대기신청</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUB-TAB 3: 신청 내역 확인 (Applications Status) -->
+            <div id="sec-applications" class="mypage-sec hidden space-y-4">
+                <h3 class="font-bold text-lg text-slate-900">희망도서, 좌석 및 행사 신청 현황</h3>
+                <div id="applications-container" class="space-y-3">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                        <div class="space-y-1">
+                            <span class="bg-amber-100 text-amber-800 text-xs font-bold px-2 py-0.5 rounded-full">희망도서 신청</span>
+                            <h4 class="font-bold text-slate-900 text-base">퀀텀 컴퓨팅의 이해 (저자: 박양자)</h4>
+                            <p class="text-xs text-slate-500">신청일자: 2026-08-02 | 처리상태: <strong class="text-brand-600">입고 검토 중</strong></p>
+                        </div>
+                        <span class="text-xs font-bold bg-brand-50 text-brand-600 px-3 py-1.5 rounded-lg self-start sm:self-center">처리 중</span>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                        <div class="space-y-1">
+                            <span class="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-0.5 rounded-full">열람석 예약</span>
+                            <h4 class="font-bold text-slate-900 text-base">3층 자율열람실 - 42번 좌석</h4>
+                            <p class="text-xs text-slate-500">이용일시: 2026-08-06 (오늘 13:00~17:00)</p>
+                        </div>
+                        <span class="text-xs font-bold bg-emerald-100 text-emerald-800 px-3 py-1.5 rounded-lg self-start sm:self-center">예약 확정</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUB-TAB 4: 연체 및 제재 내역 -->
+            <div id="sec-penalties" class="mypage-sec hidden space-y-4">
+                <div class="bg-emerald-50 border border-emerald-200 p-6 rounded-2xl flex items-center gap-4">
+                    <div class="w-12 h-12 bg-emerald-500 text-white rounded-full flex items-center justify-center text-2xl shrink-0">
+                        <i class="fa-solid fa-shield-check"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-emerald-900">현재 제재 및 연체 내역이 없습니다.</h3>
+                        <p class="text-xs text-emerald-700 mt-1">김도서 님은 대출 규칙을 잘 준수하고 계십니다. 정상적으로 도서 대출 및 시설 이용이 가능합니다.</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <h4 class="font-bold text-slate-900">JSL도서관 제재 규정 안내</h4>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        · 연체 발생 시 [연체 일수 × 연체 권수] 만큼 도서 대출이 제한됩니다.<br>
+                        · 연체 일수가 30일을 초과하는 경우 회원 자격이 정지될 수 있으니 반납일을 준수하여 주시기 바랍니다.
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- MODAL 1: Detailed OPAC Search Modal (상세 검색) -->
+    <div id="modal-opac" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeModal('modal-opac')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="border-b border-slate-100 pb-3">
+                <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-brand-600"></i> 상세 검색 (상세 OPAC)
+                </h2>
+                <p class="text-xs text-slate-500">서명, 저자, 출판사, ISBN, 청구기호 등으로 정확하게 자료를 검색합니다.</p>
+            </div>
+
+            <form onsubmit="handleOpacSearch(event)" class="space-y-4 text-sm">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">서명 (책 제목)</label>
+                        <input type="text" placeholder="예: 인공지능" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">저자 (지은이)</label>
+                        <input type="text" placeholder="예: 홍길동" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">출판사</label>
+                        <input type="text" placeholder="예: JSL미디어" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">ISBN 번호</label>
+                        <input type="text" placeholder="예: 9788912345678" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">청구 기호</label>
+                        <input type="text" placeholder="예: 004.73" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">발행 연도</label>
+                        <div class="flex items-center gap-2">
+                            <input type="number" placeholder="2020" class="w-full px-2 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-brand-500 text-center">
+                            <span>~</span>
+                            <input type="number" placeholder="2026" class="w-full px-2 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-brand-500 text-center">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-4 flex justify-end gap-3 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('modal-opac')" class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-semibold hover:bg-slate-50">취소</button>
+                    <button type="submit" class="px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold shadow">상세 검색 실행</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: Popup Announcement (주요 공지 팝업) -->
+    <div id="modal-notice-pop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-2xl relative">
+            <div class="bg-brand-600 text-white p-4 -m-6 mb-2 rounded-t-2xl flex justify-between items-center">
+                <h3 class="font-bold text-lg"><i class="fa-solid fa-bullhorn me-2"></i> JSL도서관 공지사항</h3>
+                <button onclick="closeModal('modal-notice-pop')" class="text-white hover:text-slate-200 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="space-y-3 text-sm text-slate-700 pt-2">
+                <h4 class="font-bold text-slate-900 text-base">2026년 여름 광복절 연휴 및 특별 독서교실 안내</h4>
+                <p class="leading-relaxed">
+                    안녕하세요. JSL도서관 이용자 여러분께 안내드립니다.<br><br>
+                    <strong>1. 광복절 휴관 안내:</strong> 8월 15일(토)은 법정 공휴일로 종합자료실 및 열람실 전체가 휴관합니다.<br>
+                    <strong>2. 반납 연장:</strong> 휴관 기간 중 반납 예정인 도서는 8월 17일(월)로 자동 연장 처리됩니다.<br>
+                    <strong>3. 여름 독서교실:</strong> 초등학생 대상 여름 AI 독서 교실이 8월 10일부터 운영되오니 많은 참여 바랍니다.
+                </p>
+            </div>
+            <div class="pt-3 border-t border-slate-100 flex justify-between items-center">
+                <label class="text-xs text-slate-500 flex items-center gap-1 cursor-pointer">
+                    <input type="checkbox" onclick="closeModal('modal-notice-pop')" class="rounded"> 오늘 하루 보지 않기
+                </label>
+                <button onclick="closeModal('modal-notice-pop')" class="bg-slate-800 text-white text-xs font-bold px-4 py-2 rounded-lg">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: Seat Reservation Modal (좌석 및 시설 예약) -->
+    <div id="modal-seat" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl relative">
+            <button onclick="closeModal('modal-seat')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <h3 class="font-bold text-lg text-slate-900"><i class="fa-solid fa-chair text-brand-600 me-2"></i>열람석 빠른 예약</h3>
+            <p class="text-xs text-slate-500">실시간 이용 가능한 열람석 상태입니다.</p>
+            
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-sm space-y-2">
+                <div class="flex justify-between">
+                    <span>3층 제1자율열람실</span>
+                    <span class="font-bold text-brand-600">32석 / 60석 남음</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>3층 노트북 전용존</span>
+                    <span class="font-bold text-amber-600">5석 남음</span>
+                </div>
+            </div>
+
+            <button onclick="handleSeatReserve()" class="w-full bg-brand-600 text-white font-bold py-2.5 rounded-xl text-sm shadow">현재 위치에서 원클릭 예약하기</button>
+        </div>
+    </div>
+
+    <!-- Custom Toast Message Element -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-2xl text-sm font-semibold flex items-center gap-3 transition-all transform translate-y-20 opacity-0 z-50">
+        <i class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
+        <span id="toast-text">처리가 완료되었습니다.</span>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 text-xs py-10 mt-12 border-t border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800 pb-6">
+                <div class="flex items-center gap-2 text-white font-bold text-lg">
+                    <i class="fa-solid fa-book-bookmark text-brand-500"></i> JSL도서관
+                </div>
+                <div class="flex flex-wrap gap-6 text-slate-400 font-medium">
+                    <a href="#" class="hover:text-white">개인정보처리방침</a>
+                    <a href="#" class="hover:text-white">이용약관</a>
+                    <a href="#" class="hover:text-white">도서관 헌장</a>
+                    <a href="#" class="hover:text-white">오시는 길</a>
+                </div>
+            </div>
+            <div class="flex flex-col sm:flex-row justify-between text-slate-500 gap-2">
+                <p>서울특별시 도서관로 123 JSL도서관 | TEL: 02-1234-5678 | FAX: 02-1234-5679</p>
+                <p>© 2026 JSL Library. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Tab Navigation Switcher
+        function switchNav(pageId) {
+            document.querySelectorAll('.page-view').forEach(el => el.classList.add('hidden'));
+            const target = document.getElementById('page-' + pageId);
+            if (target) {
+                target.classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        // Search Category selector toggle
+        function setSearchCategory(btn, category) {
+            document.querySelectorAll('.search-tab').forEach(el => {
+                el.classList.remove('bg-brand-600', 'text-white');
+                el.classList.add('hover:bg-slate-100', 'text-slate-600');
+            });
+            btn.classList.add('bg-brand-600', 'text-white');
+            btn.classList.remove('hover:bg-slate-100', 'text-slate-600');
+        }
+
+        // Quick Search Click
+        function quickSearch(keyword) {
+            document.getElementById('mainSearchInput').value = keyword;
+            showToast(`'${keyword}' 키워드로 검색을 실행합니다.`);
+        }
+
+        // Main Search Form Handler
+        function handleMainSearch(e) {
+            e.preventDefault();
+            const val = document.getElementById('mainSearchInput').value;
+            if (!val.trim()) {
+                showToast('검색어를 입력해 주세요.');
+                return;
+            }
+            showToast(`통합 검색결과: '${val}' (검색 결과 12건이 조회되었습니다)`);
+        }
+
+        // OPAC Detailed Search Handler
+        function handleOpacSearch(e) {
+            e.preventDefault();
+            closeModal('modal-opac');
+            showToast('상세 OPAC 조건으로 검색을 완료하였습니다.');
+        }
+
+        // Modal Helpers
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        // MyPage Sub-tab Switcher
+        function switchMyPageTab(btn, secId) {
+            document.querySelectorAll('.mypage-tab').forEach(el => el.classList.remove('tab-active'));
+            btn.classList.add('tab-active');
+
+            document.querySelectorAll('.mypage-sec').forEach(el => el.classList.add('hidden'));
+            document.getElementById(secId).classList.remove('hidden');
+        }
+
+        // Loan Extension Interaction
+        function extendLoan(rowId, dueDateId, buttonEl) {
+            const dueDate = document.getElementById(dueDateId);
+            dueDate.innerText = '2026-08-22 (7일 연장완료)';
+            dueDate.className = 'p-4 font-bold text-emerald-600';
+            
+            buttonEl.disabled = true;
+            buttonEl.innerText = '연장 완료';
+            buttonEl.className = 'bg-slate-300 text-slate-600 font-bold px-3 py-1.5 rounded-lg text-xs cursor-not-allowed';
+
+            showToast('대출 기간이 7일 연장되었습니다.');
+        }
+
+        // Hope Book Submission Interaction
+        function handleHopeBookSubmit(e) {
+            e.preventDefault();
+            const title = document.getElementById('hopeTitle').value;
+            const author = document.getElementById('hopeAuthor').value;
+
+            // Add new application to MyPage list dynamically
+            const container = document.getElementById('applications-container');
+            const newCard = document.createElement('div');
+            newCard.className = "bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between sm:items-center gap-3";
+            newCard.innerHTML = `
+                <div class="space-y-1">
+                    <span class="bg-amber-100 text-amber-800 text-xs font-bold px-2 py-0.5 rounded-full">희망도서 신청</span>
+                    <h4 class="font-bold text-slate-900 text-base">${title} (저자: ${author})</h4>
+                    <p class="text-xs text-slate-500">신청일자: 2026-08-06 (오늘) | 처리상태: <strong class="text-amber-600">신청 접수완료</strong></p>
+                </div>
+                <span class="text-xs font-bold bg-amber-100 text-amber-800 px-3 py-1.5 rounded-lg self-start sm:self-center">접수완료</span>
+            `;
+            container.prepend(newCard);
+
+            // Update stats
+            const statReq = document.getElementById('stat-request');
+            statReq.innerText = (parseInt(statReq.innerText) + 1) + '건';
+
+            showToast(`희망도서 '${title}' 신청이 완료되었습니다.`);
+            e.target.reset();
+            switchNav('mypage');
+        }
+
+        // Seat Reservation
+        function handleSeatReserve() {
+            closeModal('modal-seat');
+            showToast('3층 자율열람실 45번 좌석 예약이 완료되었습니다.');
+        }
+
+        // Toast Helper
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            const toastText = document.getElementById('toast-text');
+            toastText.innerText = msg;
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
