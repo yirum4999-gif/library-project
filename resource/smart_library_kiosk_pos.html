@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>스마트 도서관 무인 대출/반납 키오스크</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Noto Sans KR -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Noto Sans KR', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f7ff',
+              100: '#e0effe',
+              500: '#2563eb',
+              600: '#1d4ed8',
+              700: '#1e40af',
+              900: '#0f172a'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom Animations and Scrollbars */
+    @keyframes pulse-subtle {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.02); opacity: 0.92; }
+    }
+    .pulse-btn {
+      animation: pulse-subtle 3s infinite ease-in-out;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background-color: #cbd5e1;
+      border-radius: 9999px;
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col justify-between select-none">
+
+  <!-- Header Bar -->
+  <header class="bg-slate-900 text-white shadow-lg sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+      
+      <!-- Logo & System Name -->
+      <div class="flex items-center space-x-4">
+        <div class="bg-gradient-to-tr from-blue-600 to-indigo-500 text-white p-3 rounded-2xl shadow-md flex items-center justify-center">
+          <i class="fa-solid fa-book-open-reader text-2xl"></i>
+        </div>
+        <div>
+          <h1 class="font-extrabold text-xl tracking-tight text-white flex items-center gap-2">
+            스마트 도서관 무인 키오스크
+            <span class="text-xs bg-blue-500/30 text-blue-300 border border-blue-400/30 px-2 py-0.5 rounded-full font-medium">자동 스캔 모드</span>
+          </h1>
+          <p class="text-xs text-slate-400">하드웨어 바코드 리더기 항시 감지 중</p>
+        </div>
+      </div>
+
+      <!-- Realtime Time & Return to Standby Button -->
+      <div class="flex items-center space-x-6">
+        <!-- Return to Standby Button (Visible during active session) -->
+        <button 
+          id="btn-go-standby" 
+          onclick="resetToStandby()" 
+          class="hidden bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2.5 rounded-xl border border-slate-700 font-semibold text-sm transition flex items-center gap-2 shadow-sm"
+        >
+          <i class="fa-solid fa-house"></i>
+          <span>대기 화면으로</span>
+        </button>
+
+        <!-- Live Clock -->
+        <div class="text-right border-l border-slate-800 pl-6 hidden sm:block">
+          <div id="clock-date" class="text-xs text-slate-400 font-medium">2026-08-26 (수)</div>
+          <div id="clock-time" class="font-mono text-lg font-bold text-blue-400 tracking-wider">15:30:00</div>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- MAIN VIEW CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-center">
+
+    <!-- ================================================================= -->
+    <!-- VIEW 1: STANDBY / WELCOME SCREEN (로그인 전 대기 화면) -->
+    <!-- ================================================================= -->
+    <div id="view-standby" class="flex flex-col items-center justify-center py-6 space-y-8 animate-fade-in">
+      
+      <!-- Welcome Banner -->
+      <div class="text-center space-y-3 max-w-2xl">
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 text-brand-600 font-bold text-sm border border-blue-100 shadow-sm">
+          <i class="fa-solid fa-bell animate-bounce text-blue-500"></i>
+          <span>환영합니다! 서비스를 선택하거나 바코드를 스캔하세요</span>
+        </div>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
+          도서 대출 및 반납을 용이하게 진행하세요
+        </h2>
+        <p class="text-slate-500 text-base">
+          회원증 바코드를 리더기에 태그하거나 아래 메뉴를 터치하여 시작하세요.
+        </p>
+      </div>
+
+      <!-- Kiosk Main Touch Action Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl">
+        
+        <!-- Action 1: Loan (Checkout) -> Go to Login Page -->
+        <button 
+          onclick="showLoginView()" 
+          class="pulse-btn group bg-white hover:bg-gradient-to-br hover:from-blue-600 hover:to-indigo-600 text-slate-800 hover:text-white p-8 rounded-3xl border-2 border-slate-200/80 hover:border-transparent shadow-xl hover:shadow-2xl transition-all duration-300 flex flex-col items-start justify-between min-h-[220px] relative overflow-hidden"
+        >
+          <div class="absolute -right-6 -bottom-6 text-slate-100 group-hover:text-white/10 text-9xl transition duration-300">
+            <i class="fa-solid fa-arrow-up-from-bracket"></i>
+          </div>
+          <div class="flex items-center justify-between w-full">
+            <div class="w-16 h-16 rounded-2xl bg-blue-100 group-hover:bg-white/20 text-brand-600 group-hover:text-white flex items-center justify-center text-3xl shadow-sm transition">
+              <i class="fa-solid fa-book text-2xl"></i>
+            </div>
+            <span class="text-xs font-bold px-3 py-1 rounded-full bg-blue-50 group-hover:bg-white/20 text-brand-600 group-hover:text-white transition">
+              대출 서비스
+            </span>
+          </div>
+          <div class="mt-8 text-left z-10">
+            <h3 class="text-2xl font-extrabold tracking-tight mb-1">도서 대출하기</h3>
+            <p class="text-sm text-slate-500 group-hover:text-blue-100 transition">회원 인증 후 대출을 시작합니다. (회원코드 / 바코드)</p>
+          </div>
+        </button>
+
+        <!-- Action 2: Return -->
+        <button 
+          onclick="startSession('return')" 
+          class="pulse-btn group bg-white hover:bg-gradient-to-br hover:from-emerald-600 hover:to-teal-600 text-slate-800 hover:text-white p-8 rounded-3xl border-2 border-slate-200/80 hover:border-transparent shadow-xl hover:shadow-2xl transition-all duration-300 flex flex-col items-start justify-between min-h-[220px] relative overflow-hidden"
+        >
+          <div class="absolute -right-6 -bottom-6 text-slate-100 group-hover:text-white/10 text-9xl transition duration-300">
+            <i class="fa-solid fa-arrow-down-to-bracket"></i>
+          </div>
+          <div class="flex items-center justify-between w-full">
+            <div class="w-16 h-16 rounded-2xl bg-emerald-100 group-hover:bg-white/20 text-emerald-600 group-hover:text-white flex items-center justify-center text-3xl shadow-sm transition">
+              <i class="fa-solid fa-rotate-left text-2xl"></i>
+            </div>
+            <span class="text-xs font-bold px-3 py-1 rounded-full bg-emerald-50 group-hover:bg-white/20 text-emerald-600 group-hover:text-white transition">
+              반납 서비스
+            </span>
+          </div>
+          <div class="mt-8 text-left z-10">
+            <h3 class="text-2xl font-extrabold tracking-tight mb-1">도서 반납하기</h3>
+            <p class="text-sm text-slate-500 group-hover:text-emerald-100 transition">회원증 없이 반납할 도서 바코드를 바로 스캔하세요.</p>
+          </div>
+        </button>
+
+      </div>
+
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- VIEW 1.5: MEMBER LOGIN PAGE (도서 대출 전 회원 로그인 화면) -->
+    <!-- ================================================================= -->
+    <div id="view-login" class="hidden flex-col items-center justify-center py-6 animate-fade-in max-w-2xl mx-auto w-full">
+      <div class="bg-white rounded-3xl p-8 shadow-xl border border-slate-200/80 w-full space-y-6">
+        
+        <!-- Login Header -->
+        <div class="text-center space-y-2">
+          <div class="w-16 h-16 rounded-2xl bg-blue-100 text-brand-600 flex items-center justify-center text-3xl mx-auto shadow-sm">
+            <i class="fa-solid fa-user-lock"></i>
+          </div>
+          <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">회원 인증 (로그인)</h2>
+          <p class="text-xs text-slate-500">도서 대출을 위해 회원 인증 방식을 선택하여 로그인하세요.</p>
+        </div>
+
+        <!-- Login Method Tabs -->
+        <div class="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
+          <button id="tab-login-code" onclick="switchLoginMethod('code')" class="flex-1 py-3 rounded-xl text-sm font-bold transition-all bg-white text-brand-600 shadow-md flex items-center justify-center gap-2">
+            <i class="fa-solid fa-keyboard"></i>
+            <span>회원코드로 로그인</span>
+          </button>
+          <button id="tab-login-barcode" onclick="switchLoginMethod('barcode')" class="flex-1 py-3 rounded-xl text-sm font-bold transition-all text-slate-500 hover:text-slate-900 flex items-center justify-center gap-2">
+            <i class="fa-solid fa-barcode"></i>
+            <span>바코드로 로그인</span>
+          </button>
+        </div>
+
+        <!-- FORM 1: 회원코드 입력 로그인 -->
+        <div id="login-form-code" class="space-y-4">
+          <div>
+            <label for="input-member-code" class="block text-xs font-bold text-slate-600 mb-1.5">회원코드 / 회원번호 입력</label>
+            <div class="relative">
+              <input 
+                type="text" 
+                id="input-member-code" 
+                placeholder="예: M8842" 
+                class="w-full px-4 py-3.5 pl-11 rounded-xl border-2 border-slate-200 focus:border-brand-500 focus:outline-none text-base font-semibold transition"
+                onkeypress="if(event.key==='Enter') executeLoginByCode()"
+              />
+              <i class="fa-solid fa-id-card absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            </div>
+          </div>
+
+          <button 
+            onclick="executeLoginByCode()" 
+            class="w-full py-4 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-bold rounded-2xl shadow-lg shadow-brand-500/20 transition flex items-center justify-center gap-2 text-base"
+          >
+            <i class="fa-solid fa-right-to-bracket"></i>
+            <span>로그인 하기</span>
+          </button>
+        </div>
+
+        <!-- FORM 2: 바코드 태그 로그인 -->
+        <div id="login-form-barcode" class="hidden space-y-4 text-center">
+          <div class="p-8 rounded-2xl bg-blue-50/70 border-2 border-dashed border-blue-200 flex flex-col items-center justify-center space-y-3">
+            <div class="w-16 h-16 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-3xl animate-pulse">
+              <i class="fa-solid fa-barcode"></i>
+            </div>
+            <div>
+              <h4 class="font-bold text-slate-800 text-sm">회원증 바코드를 태그해 주세요</h4>
+              <p class="text-xs text-slate-500 mt-1">모바일 회원증 또는 실물 회원증 바코드를 리더기에 대어주세요.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Demo Login Helpers -->
+        <div class="pt-4 border-t border-slate-100">
+          <div class="text-xs font-bold text-slate-400 mb-2.5 text-center">원클릭 로그인 테스트 (가짜 로그인)</div>
+          <div class="grid grid-cols-2 gap-3">
+            <button 
+              onclick="fakeLogin('M8842')" 
+              class="p-3 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-xl text-left transition group"
+            >
+              <div class="text-xs font-bold text-slate-800 group-hover:text-blue-700">홍길동 회원 (정상)</div>
+              <div class="text-[11px] font-mono text-slate-400">코드: M8842</div>
+            </button>
+            <button 
+              onclick="fakeLogin('M9901')" 
+              class="p-3 bg-slate-50 hover:bg-rose-50 border border-slate-200 hover:border-rose-300 rounded-xl text-left transition group"
+            >
+              <div class="text-xs font-bold text-slate-800 group-hover:text-rose-700">김철수 회원 (연체)</div>
+              <div class="text-[11px] font-mono text-slate-400">코드: M9901</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Cancel / Back Button -->
+        <div class="pt-2 text-center">
+          <button onclick="resetToStandby()" class="text-xs font-bold text-slate-400 hover:text-slate-600 transition flex items-center justify-center gap-1.5 mx-auto py-1">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>대기 화면으로 돌아가기</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+
+    <!-- ================================================================= -->
+    <!-- VIEW 2: ACTIVE KIOSK WORK SESSION (대출/반납 작업 진행 화면) -->
+    <!-- ================================================================= -->
+    <div id="view-kiosk" class="hidden flex-col gap-6 animate-fade-in">
+      
+      <!-- Top Session Status Header -->
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80 flex flex-wrap items-center justify-between gap-4">
+        
+        <!-- Mode Title & Session Timer -->
+        <div class="flex items-center space-x-4">
+          <div id="session-badge-icon" class="w-12 h-12 rounded-xl bg-brand-600 text-white flex items-center justify-center text-xl shadow-md">
+            <i class="fa-solid fa-arrow-up-from-bracket"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 id="session-title" class="text-xl font-bold text-slate-900">도서 대출 세션</h2>
+              <span id="session-mode-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700">
+                대출 진행 중
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5">바코드를 스캔할 때마다 아래 목록에 자동 등록됩니다.</p>
+          </div>
+        </div>
+
+        <!-- Timeout Indicator -->
+        <div class="flex items-center space-x-3">
+          <!-- Auto Reset Countdown -->
+          <div class="bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl text-center" title="미조작 시 자동으로 대기화면 복귀">
+            <span class="text-[10px] text-slate-400 font-medium block">자동 종료</span>
+            <span id="idle-timer" class="text-xs font-mono font-bold text-rose-600">60초</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Member Card Info (Active in Checkout Mode) -->
+      <div id="member-info-panel" class="bg-gradient-to-r from-slate-900 to-slate-800 rounded-2xl p-5 text-white shadow-md flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center space-x-4">
+          <div class="w-14 h-14 rounded-full bg-blue-600/30 border-2 border-blue-400/50 flex items-center justify-center text-2xl text-blue-300">
+            <i class="fa-solid fa-user-check"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 id="member-name" class="text-lg font-bold">홍길동 회원님</h3>
+              <span id="member-type" class="text-xs bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded border border-blue-400/30">일반회원</span>
+            </div>
+            <p id="member-id" class="text-xs font-mono text-slate-400 mt-0.5">회원번호: M-8842</p>
+          </div>
+        </div>
+
+        <!-- Member Loan Stats -->
+        <div class="flex items-center gap-4 text-center text-xs">
+          <div class="bg-slate-800/80 px-4 py-2 rounded-xl border border-slate-700/60">
+            <div class="text-slate-400 mb-0.5">현재 대출 중</div>
+            <div id="stat-current" class="text-base font-bold text-white">2 권</div>
+          </div>
+          <div class="bg-slate-800/80 px-4 py-2 rounded-xl border border-slate-700/60">
+            <div class="text-slate-400 mb-0.5">추가 대출 가능</div>
+            <div id="stat-available" class="text-base font-bold text-blue-400">3 권</div>
+          </div>
+          <div class="bg-slate-800/80 px-4 py-2 rounded-xl border border-slate-700/60">
+            <div class="text-slate-400 mb-0.5">연체 현황</div>
+            <div id="stat-overdue" class="text-base font-bold text-emerald-400">없음</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scanned Items Table Container -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 flex flex-col overflow-hidden min-h-[380px]">
+        
+        <!-- Table Header & Controls -->
+        <div class="p-4 bg-slate-50/70 border-b border-slate-200 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-list-check text-brand-600"></i>
+            <h3 class="font-bold text-slate-800 text-sm">스캔 완료 도서 목록</h3>
+            <span id="scanned-count-badge" class="ml-2 px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">
+              총 0 권
+            </span>
+          </div>
+          <button onclick="clearScannedList()" class="text-xs text-slate-400 hover:text-rose-600 px-2 py-1 rounded hover:bg-rose-50 transition flex items-center gap-1">
+            <i class="fa-solid fa-trash-can"></i> 전체 비우기
+          </button>
+        </div>
+
+        <!-- Book List Table -->
+        <div class="flex-1 overflow-x-auto custom-scrollbar">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-slate-200 text-xs font-bold text-slate-500 bg-slate-100/60 uppercase tracking-wider">
+                <th class="py-3 px-4 w-12 text-center">NO</th>
+                <th class="py-3 px-4">도서명 / 저자</th>
+                <th class="py-3 px-4">바코드 (ISBN)</th>
+                <th class="py-3 px-4">청구기호</th>
+                <th class="py-3 px-4 text-center">반납 예정일</th>
+                <th class="py-3 px-4 text-center w-16">제거</th>
+              </tr>
+            </thead>
+            <tbody id="book-table-body" class="divide-y divide-slate-100 text-sm">
+              <!-- Empty State -->
+              <tr id="empty-row">
+                <td colspan="6" class="py-24 text-center text-slate-400">
+                  <div class="flex flex-col items-center justify-center">
+                    <div class="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-300 text-3xl mb-3">
+                      <i class="fa-solid fa-barcode"></i>
+                    </div>
+                    <p class="font-bold text-slate-600 text-base">스캔된 도서가 없습니다.</p>
+                    <p class="text-xs text-slate-400 mt-1">리더기로 도서 바코드를 태그해 주세요.</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Action Footer -->
+        <div class="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+          <div class="text-xs text-slate-400 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span>바코드 입력 대기 중 (별도 터치 없이 스캔 가능)</span>
+          </div>
+
+          <!-- Submit Button -->
+          <button 
+            id="btn-execute"
+            onclick="executeSessionAction()" 
+            class="px-8 py-3.5 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-bold rounded-xl shadow-lg shadow-brand-500/20 transition flex items-center gap-2 text-base"
+          >
+            <i class="fa-solid fa-check"></i>
+            <span id="btn-execute-text">대출 완료 처리</span>
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- DEMO HARDWARE SCANNER SIMULATOR (하단 실습/테스트용 바코드 스뮬레이터) -->
+  <footer class="bg-slate-900 text-slate-400 text-xs py-3 px-4 border-t border-slate-800 sticky bottom-0 z-20">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center space-x-2 font-mono text-slate-400">
+        <i class="fa-solid fa-vial text-blue-400"></i>
+        <span class="font-bold text-slate-300">리더기 시뮬레이터 (원클릭 스캔 테스트):</span>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <button onclick="simulateScan('M8842')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-blue-300 border border-slate-700 rounded font-mono transition">
+          [회원 A 태그]
+        </button>
+        <button onclick="simulateScan('M9901')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-rose-300 border border-slate-700 rounded font-mono transition">
+          [회원 B (연체)]
+        </button>
+        <button onclick="simulateScan('8966262281')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded font-mono transition">
+          + 클린코드 스캔
+        </button>
+        <button onclick="simulateScan('8998139766')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded font-mono transition">
+          + 리팩터링 스캔
+        </button>
+        <button onclick="simulateScan('9791158391409')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded font-mono transition">
+          + 자바스크립트 스캔
+        </button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Notification Toast Container -->
+  <div id="toast-container" class="fixed top-24 right-6 z-50 flex flex-col gap-2"></div>
+
+  <script>
+    // System State
+    let currentView = 'standby'; // 'standby', 'login', or 'kiosk'
+    let currentMode = 'checkout'; // 'checkout' or 'return'
+    let activeLoginMethod = 'code'; // 'code' or 'barcode'
+    let scannedBooks = [];
+    let idleCountdown = 60;
+    let idleTimerInterval = null;
+
+    // Mock Databases
+    const mockMembers = {
+      'M8842': { id: 'M8842', name: '홍길동', status: '정상', currentLoans: 2, maxLoans: 5, overdue: 0, type: '일반회원' },
+      'M9901': { id: 'M9901', name: '김철수', status: '대출정지(연체)', currentLoans: 4, maxLoans: 5, overdue: 2, type: '우수회원' }
+    };
+
+    const mockBooks = {
+      '8966262281': { isbn: '9788966262281', title: '클린 코드 (Clean Code)', author: '로버트 C. 마틴', callNo: '005.133-마898ㅋ', publisher: '인사이트' },
+      '8998139766': { isbn: '9788998139766', title: '리팩터링 2판', author: '마틴 파울러', callNo: '005.11-파897ㄹ', publisher: '한빛미디어' },
+      '9791158391409': { isbn: '9791158391409', title: '모던 자바스크립트 Deep Dive', author: '이웅모', callNo: '005.138-이68ㅁ', publisher: '위키북스' }
+    };
+
+    let currentMember = mockMembers['M8842'];
+
+    // Audio Feedback Generator using Web Audio API
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBeep(type = 'success') {
+      try {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'success') {
+          osc.frequency.setValueAtTime(1046.5, audioCtx.currentTime); // C6
+          gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.12);
+        } else if (type === 'complete') {
+          osc.frequency.setValueAtTime(1318.5, audioCtx.currentTime); // E6
+          gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.25);
+        } else if (type === 'error') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+          gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.3);
+        }
+      } catch (e) {
+        console.error("Audio playback error", e);
+      }
+    }
+
+    // Realtime Clock Handler
+    function updateClock() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const date = String(now.getDate()).padStart(2, '0');
+      const days = ['일', '월', '화', '수', '목', '금', '토'];
+      const day = days[now.getDay()];
+
+      document.getElementById('clock-date').innerText = `${year}-${month}-${date} (${day})`;
+      document.getElementById('clock-time').innerText = now.toTimeString().split(' ')[0];
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // GLOBAL HARDWARE BARCODE SCANNER LISTENER
+    // Hardware barcode guns stream keypresses very quickly and end with "Enter"
+    let barcodeBuffer = '';
+    let lastKeyTime = Date.now();
+
+    document.addEventListener('keydown', (e) => {
+      // Ignore if user is inside a native input element (if any)
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+      const currentTime = Date.now();
+      // If typing delay is > 100ms, reset buffer (humans type slowly, hardware scanner types in <20ms)
+      if (currentTime - lastKeyTime > 100) {
+        barcodeBuffer = '';
+      }
+      lastKeyTime = currentTime;
+
+      if (e.key === 'Enter') {
+        if (barcodeBuffer.trim().length > 0) {
+          handleGlobalBarcode(barcodeBuffer.trim());
+          barcodeBuffer = '';
+        }
+      } else if (e.key.length === 1) { // Single character
+        barcodeBuffer += e.key;
+      }
+
+      resetIdleTimer();
+    });
+
+    // Process Scanned Barcode String
+    function handleGlobalBarcode(code) {
+      resetIdleTimer();
+
+      // Check if code is Member ID
+      if (code.startsWith('M') || mockMembers[code]) {
+        const memberKey = mockMembers[code] ? code : 'M' + code.replace(/\D/g, '');
+        if (mockMembers[memberKey]) {
+          fakeLogin(memberKey);
+        } else {
+          playBeep('error');
+          showToast('등록되지 않은 회원 바코드입니다.', 'error');
+        }
+        return;
+      }
+
+      // Otherwise, handle as Book Barcode
+      if (currentView === 'standby' || currentView === 'login') {
+        startSession('checkout');
+      }
+
+      const book = mockBooks[code];
+      const bookData = book ? book : {
+        isbn: code,
+        title: `신규 바코드 도서 (${code})`,
+        author: '미상',
+        callNo: '000.00-자999',
+        publisher: '자체등록'
+      };
+
+      // Check Duplicate
+      if (scannedBooks.some(b => b.isbn === bookData.isbn)) {
+        playBeep('error');
+        showToast(`이미 목록에 추가된 도서입니다: ${bookData.title}`, 'warning');
+        return;
+      }
+
+      scannedBooks.push({
+        ...bookData,
+        dueDate: calculateDueDate(14)
+      });
+
+      playBeep('success');
+      renderBookTable();
+      showToast(`도서 추가: ${bookData.title}`, 'success');
+    }
+
+    // Calculate Return Due Date
+    function calculateDueDate(days) {
+      const d = new Date();
+      d.setDate(d.getDate() + days);
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const date = String(d.getDate()).padStart(2, '0');
+      return `${m}.${date}`;
+    }
+
+    // Show Member Login Screen
+    function showLoginView() {
+      currentView = 'login';
+      document.getElementById('view-standby').classList.add('hidden');
+      document.getElementById('view-kiosk').classList.add('hidden');
+      document.getElementById('view-login').classList.remove('hidden');
+      document.getElementById('view-login').classList.add('flex');
+      document.getElementById('btn-go-standby').classList.remove('hidden');
+
+      switchLoginMethod('code');
+      startIdleTimer();
+      playBeep('success');
+    }
+
+    // Switch Login Method Tab (Member Code vs Barcode)
+    function switchLoginMethod(method) {
+      activeLoginMethod = method;
+      resetIdleTimer();
+
+      const tabCode = document.getElementById('tab-login-code');
+      const tabBarcode = document.getElementById('tab-login-barcode');
+      const formCode = document.getElementById('login-form-code');
+      const formBarcode = document.getElementById('login-form-barcode');
+
+      if (method === 'code') {
+        tabCode.className = 'flex-1 py-3 rounded-xl text-sm font-bold transition-all bg-white text-brand-600 shadow-md flex items-center justify-center gap-2';
+        tabBarcode.className = 'flex-1 py-3 rounded-xl text-sm font-bold transition-all text-slate-500 hover:text-slate-900 flex items-center justify-center gap-2';
+        formCode.classList.remove('hidden');
+        formBarcode.classList.add('hidden');
+        setTimeout(() => document.getElementById('input-member-code').focus(), 100);
+      } else {
+        tabBarcode.className = 'flex-1 py-3 rounded-xl text-sm font-bold transition-all bg-white text-brand-600 shadow-md flex items-center justify-center gap-2';
+        tabCode.className = 'flex-1 py-3 rounded-xl text-sm font-bold transition-all text-slate-500 hover:text-slate-900 flex items-center justify-center gap-2';
+        formBarcode.classList.remove('hidden');
+        formCode.classList.add('hidden');
+      }
+    }
+
+    // Execute Login by Entered Code
+    function executeLoginByCode() {
+      const codeInput = document.getElementById('input-member-code').value.trim();
+      if (!codeInput) {
+        playBeep('error');
+        showToast('회원코드를 입력해 주세요.', 'warning');
+        return;
+      }
+
+      fakeLogin(codeInput);
+    }
+
+    // Fake Login Action Handler
+    function fakeLogin(memberCode) {
+      const key = mockMembers[memberCode] ? memberCode : (memberCode.startsWith('M') ? memberCode : 'M' + memberCode);
+      const member = mockMembers[key];
+
+      if (member) {
+        currentMember = member;
+        updateMemberUI();
+        playBeep('success');
+        showToast(`[${currentMember.name}] 님 로그인 성공!`, 'success');
+
+        // Transition to Kiosk Checkout View
+        startSession('checkout');
+      } else {
+        // Fallback for custom entered code
+        currentMember = {
+          id: key.toUpperCase(),
+          name: `회원(${key.toUpperCase()})`,
+          status: '정상',
+          currentLoans: 0,
+          maxLoans: 5,
+          overdue: 0,
+          type: '일반회원'
+        };
+        updateMemberUI();
+        playBeep('success');
+        showToast(`[${currentMember.name}] 님 임시 로그인 되었습니다.`, 'success');
+        startSession('checkout');
+      }
+    }
+
+    // Start Work Session (Checkout or Return)
+    function startSession(mode) {
+      currentView = 'kiosk';
+      currentMode = mode;
+      
+      document.getElementById('view-standby').classList.add('hidden');
+      document.getElementById('view-login').classList.add('hidden');
+      document.getElementById('view-kiosk').classList.remove('hidden');
+      document.getElementById('view-kiosk').classList.add('flex');
+      document.getElementById('btn-go-standby').classList.remove('hidden');
+
+      switchSessionMode(mode);
+      startIdleTimer();
+    }
+
+    // Switch between Checkout & Return Modes
+    function switchSessionMode(mode) {
+      currentMode = mode;
+      resetIdleTimer();
+
+      const sessionTitle = document.getElementById('session-title');
+      const sessionBadge = document.getElementById('session-mode-badge');
+      const sessionIcon = document.getElementById('session-badge-icon');
+      const memberPanel = document.getElementById('member-info-panel');
+      const btnText = document.getElementById('btn-execute-text');
+      const btnExec = document.getElementById('btn-execute');
+
+      if (mode === 'checkout') {
+        sessionTitle.innerText = '도서 대출 세션';
+        sessionBadge.innerText = '대출 진행 중';
+        sessionBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700';
+        sessionIcon.className = 'w-12 h-12 rounded-xl bg-brand-600 text-white flex items-center justify-center text-xl shadow-md';
+        sessionIcon.innerHTML = `<i class="fa-solid fa-arrow-up-from-bracket"></i>`;
+
+        memberPanel.classList.remove('hidden');
+        btnText.innerText = '대출 완료 처리';
+        btnExec.className = 'px-8 py-3.5 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-bold rounded-xl shadow-lg shadow-brand-500/20 transition flex items-center gap-2 text-base';
+      } else {
+        sessionTitle.innerText = '도서 반납 세션';
+        sessionBadge.innerText = '반납 진행 중';
+        sessionBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700';
+        sessionIcon.className = 'w-12 h-12 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-xl shadow-md';
+        sessionIcon.innerHTML = `<i class="fa-solid fa-rotate-left"></i>`;
+
+        memberPanel.classList.add('hidden');
+        btnText.innerText = '반납 완료 처리';
+        btnExec.className = 'px-8 py-3.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 transition flex items-center gap-2 text-base';
+      }
+
+      renderBookTable();
+    }
+
+    // Update Member Panel Details
+    function updateMemberUI() {
+      document.getElementById('member-name').innerText = `${currentMember.name} 회원님`;
+      document.getElementById('member-id').innerText = `회원번호: ${currentMember.id}`;
+      document.getElementById('stat-current').innerText = `${currentMember.currentLoans} 권`;
+      document.getElementById('stat-available').innerText = `${currentMember.maxLoans - currentMember.currentLoans} 권`;
+      
+      const overdueEl = document.getElementById('stat-overdue');
+      if (currentMember.overdue > 0) {
+        overdueEl.innerText = `${currentMember.overdue} 권 연체`;
+        overdueEl.className = 'text-base font-bold text-rose-400';
+      } else {
+        overdueEl.innerText = '없음';
+        overdueEl.className = 'text-base font-bold text-emerald-400';
+      }
+    }
+
+    // Render Scanned Book Table Rows
+    function renderBookTable() {
+      const tbody = document.getElementById('book-table-body');
+      const badge = document.getElementById('scanned-count-badge');
+
+      badge.innerText = `총 ${scannedBooks.length} 권`;
+
+      if (scannedBooks.length === 0) {
+        tbody.innerHTML = `
+          <tr id="empty-row">
+            <td colspan="6" class="py-24 text-center text-slate-400">
+              <div class="flex flex-col items-center justify-center">
+                <div class="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-300 text-3xl mb-3">
+                  <i class="fa-solid fa-barcode"></i>
+                </div>
+                <p class="font-bold text-slate-600 text-base">스캔된 도서가 없습니다.</p>
+                <p class="text-xs text-slate-400 mt-1">리더기로 도서 바코드를 태그해 주세요.</p>
+              </div>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = scannedBooks.map((item, index) => `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="py-3.5 px-4 text-center font-bold text-slate-400">${index + 1}</td>
+          <td class="py-3.5 px-4">
+            <div class="font-bold text-slate-900">${item.title}</div>
+            <div class="text-xs text-slate-400">${item.author} · ${item.publisher}</div>
+          </td>
+          <td class="py-3.5 px-4 font-mono text-xs text-slate-600">${item.isbn}</td>
+          <td class="py-3.5 px-4 font-mono text-xs text-slate-600">${item.callNo}</td>
+          <td class="py-3.5 px-4 text-center">
+            <span class="px-2.5 py-1 rounded text-xs font-semibold ${currentMode === 'checkout' ? 'bg-blue-50 text-blue-700' : 'bg-emerald-50 text-emerald-700'}">
+              ${currentMode === 'checkout' ? item.dueDate + ' 까지' : '즉시 반납'}
+            </span>
+          </td>
+          <td class="py-3.5 px-4 text-center">
+            <button onclick="removeBook(${index})" class="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition">
+              <i class="fa-solid fa-xmark text-base"></i>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // Remove item from scanned list
+    function removeBook(index) {
+      resetIdleTimer();
+      const removed = scannedBooks.splice(index, 1)[0];
+      renderBookTable();
+      if (removed) showToast(`목록 제거: ${removed.title}`, 'info');
+    }
+
+    // Clear List
+    function clearScannedList() {
+      resetIdleTimer();
+      if (scannedBooks.length === 0) return;
+      scannedBooks = [];
+      renderBookTable();
+      showToast('목록이 초기화되었습니다.', 'info');
+    }
+
+    // Execute Main Action (Complete Loan or Return)
+    function executeSessionAction() {
+      resetIdleTimer();
+      if (scannedBooks.length === 0) {
+        playBeep('error');
+        showToast('스캔된 도서가 없습니다. 먼저 도서 바코드를 스캔하세요.', 'warning');
+        return;
+      }
+
+      const count = scannedBooks.length;
+      playBeep('complete');
+
+      if (currentMode === 'checkout') {
+        if (currentMember.overdue > 0) {
+          playBeep('error');
+          showToast('연체 중인 회원은 대출을 완료할 수 없습니다.', 'error');
+          return;
+        }
+        showToast(`[${currentMember.name}] 님에게 총 ${count}권 대출 완료되었습니다.`, 'success');
+        currentMember.currentLoans += count;
+        updateMemberUI();
+      } else {
+        showToast(`총 ${count}권 반납 처리가 성공적으로 완료되었습니다.`, 'success');
+      }
+
+      scannedBooks = [];
+      renderBookTable();
+
+      // Return to standby after brief delay
+      setTimeout(() => {
+        resetToStandby();
+      }, 2000);
+    }
+
+    // Reset back to Standby Screen
+    function resetToStandby() {
+      currentView = 'standby';
+      scannedBooks = [];
+      clearInterval(idleTimerInterval);
+
+      document.getElementById('view-kiosk').classList.add('hidden');
+      document.getElementById('view-kiosk').classList.remove('flex');
+      document.getElementById('view-login').classList.add('hidden');
+      document.getElementById('view-login').classList.remove('flex');
+      document.getElementById('view-standby').classList.remove('hidden');
+      document.getElementById('btn-go-standby').classList.add('hidden');
+
+      const codeInput = document.getElementById('input-member-code');
+      if (codeInput) codeInput.value = '';
+
+      renderBookTable();
+      showToast('대기 화면으로 전환되었습니다.', 'info');
+    }
+
+    // Auto Reset Idle Countdown
+    function startIdleTimer() {
+      clearInterval(idleTimerInterval);
+      idleCountdown = 60;
+      updateIdleTimerDisplay();
+
+      idleTimerInterval = setInterval(() => {
+        idleCountdown--;
+        updateIdleTimerDisplay();
+
+        if (idleCountdown <= 0) {
+          clearInterval(idleTimerInterval);
+          resetToStandby();
+        }
+      }, 1000);
+    }
+
+    function resetIdleTimer() {
+      if (currentView === 'kiosk') {
+        idleCountdown = 60;
+        updateIdleTimerDisplay();
+      }
+    }
+
+    function updateIdleTimerDisplay() {
+      const timerEl = document.getElementById('idle-timer');
+      if (timerEl) timerEl.innerText = `${idleCountdown}초`;
+    }
+
+    // Hardware Scanner Simulator Button Helper
+    function simulateScan(code) {
+      handleGlobalBarcode(code);
+    }
+
+    // Toast Notification System
+    function showToast(msg, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+
+      let bg = 'bg-slate-900 text-white';
+      let icon = 'fa-circle-info';
+
+      if (type === 'success') {
+        bg = 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30';
+        icon = 'fa-circle-check';
+      } else if (type === 'error') {
+        bg = 'bg-rose-600 text-white shadow-lg shadow-rose-600/30';
+        icon = 'fa-triangle-exclamation';
+      } else if (type === 'warning') {
+        bg = 'bg-amber-500 text-white shadow-lg shadow-amber-500/30';
+        icon = 'fa-circle-exclamation';
+      }
+
+      toast.className = `flex items-center gap-3 px-4 py-3 rounded-xl shadow-md text-sm font-semibold transition-all duration-300 transform translate-x-4 opacity-0 ${bg}`;
+      toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${msg}</span>`;
+
+      container.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-x-4', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-x-4');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // Initialize View & UI
+    updateMemberUI();
+  </script>
+</body>
+</html>
