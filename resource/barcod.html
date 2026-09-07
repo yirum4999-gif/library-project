@@ -1,86 +1,79 @@
-<h1>&#x1f5a5;️ 키오스크 API 및 바코드 실시간 렌더링 테스트</h1>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>JsBarcode 실시간 렌더링 테스트</title>
+<!-- JsBarcode CDN 로드 -->
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+<style>
+    body { font-family: sans-serif; padding: 25px; line-height: 1.6; background-color: #f4f6f9; }
+    .box { background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 20px; max-width: 650px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    h2 { margin-top: 0; color: #333; font-size: 18px; border-bottom: 2px solid #007bff; padding-bottom: 8px; }
+    label { font-weight: bold; font-size: 14px; }
+    input[type="text"] { width: 95%; padding: 8px; margin: 8px 0 15px 0; border: 1px solid #ccc; border-radius: 4px; }
+    button { padding: 9px 18px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+    button:hover { background-color: #0056b3; }
+    .barcode-area { text-align: center; padding: 15px; background: #fff; border: 1px dashed #bbb; margin-top: 10px; border-radius: 6px; }
+</style>
+</head>
+<body>
 
-<p>오라클 DB(test28) 테스트 데이터: <b>회원: MEM-001</b> / <b>도서: BOOK-001, BOOK-002</b></p>
+    <h1>&#x1f5a5;️ JsBarcode 실시간 렌더링 테스트</h1>
+    <p>테스트용 권장 데이터: <b>MEM-001</b> / <b>BOOK-001</b> / <b>BOOK-002</b></p>
 
+    <!-- 1. JsBarcode 비바인딩 직접 렌더링 영역 -->
+    <div class="box">
+        <h2>1. JsBarcode 실시간 직접 렌더링 (바인딩 태그 미사용)</h2>
+        <label>출력할 바코드 번호 입력:</label>
+        <input type="text" id="barcodeValue" value="MEM-001">
+        <button type="button" onclick="generateBarcodeDirectly()">바코드 즉시 생성</button>
 
+        <div style="margin-top: 10px;">
+            <button type="button" style="padding: 4px 8px; font-size: 12px; margin-right: 5px; background-color: #6c757d;" onclick="setBarcode('MEM-001')">MEM-001</button>
+            <button type="button" style="padding: 4px 8px; font-size: 12px; margin-right: 5px; background-color: #6c757d;" onclick="setBarcode('BOOK-001')">BOOK-001</button>
+            <button type="button" style="padding: 4px 8px; font-size: 12px; background-color: #6c757d;" onclick="setBarcode('BOOK-002')">BOOK-002</button>
+        </div>
 
+        <div class="barcode-area">
+            <!-- 태그 내부에 data-bind나 jsbarcode-* 속성이 없는 순수 SVG -->
+            <svg id="targetBarcodeView"></svg>
+        </div>
+    </div>
 
+<script>
+    // [JsBarcode] 태그 바인딩 없이 순수 자바스크립트로 직접 넘겨 그리는 함수
+    function generateBarcodeDirectly() {
+        const val = document.getElementById("barcodeValue").value.trim();
+        if (!val) {
+            alert("바코드 값을 입력하세요.");
+            return;
+        }
 
-<div>
+        try {
+            JsBarcode("#targetBarcodeView", val, {
+                format: "CODE128",
+                width: 2,
+                height: 60,
+                displayValue: true,
+                fontSize: 16,
+                lineNo: "#2d3436"
+            });
+        } catch (e) {
+            alert("바코드 생성 오류: " + e.message);
+        }
+    }
 
-<h2>1. JsBarcode 실시간 직접 렌더링 (바인딩 태그 미사용)</h2>
+    // 빠른 테스트를 위한 값 변경 헬퍼 함수
+    function setBarcode(code) {
+        document.getElementById("barcodeValue").value = code;
+        generateBarcodeDirectly();
+    }
 
-출력할 바코드 번호 입력:
+    // 페이지 로드 시 기본 바코드 즉시 렌더링
+    window.onload = function() {
+        generateBarcodeDirectly();
+    };
+</script>
 
-
-
-바코드 즉시 생성
-
-
-
-<div>
-
-
-
-
-
-</div>
-
-</div>
-
-
-
-
-
-<div>
-
-<h2>2. 도서 대출 테스트 (SCN-11: page=loan)</h2>
-
-회원 바코드 (memberNo):
-
-
-
-
-
-도서 바코드 (bookBarcodes - 콤마로 다권 구분):
-
-
-
-
-
-대출 요청 전송 (POST)
-
-</div>
-
-
-
-
-
-<div>
-
-<h2>3. 도서 무인 자동 반납 테스트 (SCN-12: page=return)</h2>
-
-반납할 도서 바코드 (bookBarcode):
-
-
-
-
-
-반납 요청 전송 (POST)
-
-</div>
-
-
-
-
-
-<div>
-
-<h2>&#x1f4e1; 서블릿 JSON 응답 결과</h2>
-
-버튼을 누르면 백엔드 서블릿에서 보낸 JSON이 여기에 출력됩니다.
-
-</div>
-
-
-
+</body>
+</html>
