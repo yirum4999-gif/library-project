@@ -1,0 +1,57 @@
+/* 1. Noto Sans JP 가변 폰트 등록 (100부터 900까지 하나의 파일로 제어) */
+@font-face {
+    font-family: 'Noto Sans JP';
+    src: url('./noto-sans-jp-normal-100 900.woff2') format('woff2');
+    font-weight: 100 900; /* 가변 폰트가 지원하는 전체 두께 범위 */
+    font-style: normal;
+    font-display: swap;
+}
+
+/* 기본 바디 폰트 */
+body {font-family: 'Noto Sans JP', sans-serif;}
+
+/*부트스트랩 폰트 클래스(fw-*) 가변 폰트 매핑 규칙 */
+.fw-black, .fw-900 {
+    font-family: 'Noto Sans JP', sans-serif !important;
+    font-weight: 900 !important;
+}
+
+.fw-extrabold, .fw-800 {
+    font-family: 'Noto Sans JP', sans-serif !important;
+    font-weight: 800 !important;
+}
+
+.fw-bold, .fw-700 {
+    font-family: 'Noto Sans JP', sans-serif !important;
+    font-weight: 700 !important;
+}
+
+.fw-semibold, .fw-600 {
+    font-family: 'Noto Sans JP', sans-serif !important;
+    font-weight: 600 !important; 
+}
+
+.fw-medium, .fw-500 {
+    font-family: 'Noto Sans JP', sans-serif !important;
+    font-weight: 500 !important;
+}
+
+.fw-normal, .fw-regular, .fw-400 {
+    font-family: 'Noto Sans JP', sans-serif !important;
+    font-weight: 400 !important;
+}
+
+.fw-light, .fw-300 {
+    font-family: 'Noto Sans JP', sans-serif !important;
+    font-weight: 300 !important;
+}
+
+.fw-lighter, .fw-200 {
+    font-family: 'Noto Sans JP', sans-serif !important;
+    font-weight: 200 !important;
+}
+
+.fw-thin, .fw-100 {
+    font-family: 'Noto Sans JP', sans-serif !important;
+    font-weight: 100 !important;
+}
