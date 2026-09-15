@@ -1,63 +1,88 @@
 package model;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+//=======================================
+//이름 : LibraryMemberDTO.java
+//이 코드의 역할 : library_member 테이블의 데이터를 담는 DTO(Data Transfer Object) 클래스
+//setter 메서드들은 메서드 체이닝을 지원하도록 수정(09/14)
+//PIN 번호(pin_password) 필드 추가 (09/15)
+//=======================================
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
-import util.DBManager;
+public class LibraryMemberDTO {
 
-public class LibraryMemberDAO {
+    private int memberId;
+    private String memberNomber;
+    private String loginEmail;
+    private String passwordHash;
+    private LocalDateTime penaltyEndDate;
+    private Timestamp joinedAt;
+    private int pinPassword; // PIN 번호 추가 (NUMBER 타입에 대응)
 
-	
-	public int insertMember(LibraryMemberDTO dto) {
+    public LibraryMemberDTO() {
+        // 기본 생성자
+    }
+    
+    public int getMemberId() {
+        return memberId;
+    }
 
-	    // member_id 자리에 seq_member_id.NEXTVAL 적용
-	    String sql = "INSERT INTO library_member (member_id, member_no, login_email, password_hash, joined_at) "
-	               + "VALUES (seq_member_id.NEXTVAL, ?, ?, ?, SYSTIMESTAMP)";
+    public LibraryMemberDTO setMemberId(int memberId) {
+        this.memberId = memberId;
+        return this;
+    }
 
-	    try(Connection conn = DBManager.getConnection();
-	        PreparedStatement pstmt = conn.prepareStatement(sql)) {
-	  
+    public String getMemberNo() {
+        return memberNomber;
+    }
 
-	        // member_no는 고유한 값이어야 하므로 전달받은 값을 넣거나, 테스트 시 임의 문자열 세팅 필요
-	        pstmt.setString(1, dto.getMemberNo());
-	        pstmt.setString(2, dto.getLoginEmail());
-	        pstmt.setString(3, dto.getPasswordHash());
+    public LibraryMemberDTO setMemberNo(String memberNo) {
+        this.memberNomber = memberNo;
+        return this;
+    }
 
-	        return pstmt.executeUpdate();
+    public String getLoginEmail() {
+        return loginEmail;
+    }
 
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	    }
-	    return 0;
-	}
-	
-	public LibraryMemberDTO getMember(String loginEmail) {
-		
-		LibraryMemberDTO dto = null;
+    public LibraryMemberDTO setLoginEmail(String loginEmail) {
+        this.loginEmail = loginEmail;
+        return this;
+    }
 
-		String sql = "select * from library_member where login_email = ?";
-		try(Connection conn = DBManager.getConnection();
-			PreparedStatement pstmt = conn.prepareStatement(sql)) {
-			pstmt.setString(1, loginEmail);
-			
-			try(ResultSet rs = pstmt.executeQuery()) {
-				if (rs.next()) {
-					dto = new LibraryMemberDTO().setMemberId(rs.getInt("member_id"))
-					.setMemberNo(rs.getString("member_no"))
-					.setLoginEmail(rs.getString("login_email"))
-					.setPasswordHash(rs.getString("password_hash"));
-					
-			        return dto;	
-				}
-				
-			}
-		 } catch (Exception e) {
-			        e.printStackTrace();
-			    }
-		
-		return dto;
-	}
-	
-	
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public LibraryMemberDTO setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+        return this;
+    }
+
+    public LocalDateTime getPenaltyEndDate() {
+        return penaltyEndDate;
+    }
+
+    public LibraryMemberDTO setPenaltyEndDate(LocalDateTime penaltyEndDate) {
+        this.penaltyEndDate = penaltyEndDate;
+        return this;
+    }
+
+    public Timestamp getJoinedAt() {
+        return joinedAt;
+    }
+
+    public LibraryMemberDTO setJoinedAt(Timestamp joinedAt) {
+        this.joinedAt = joinedAt;
+        return this;
+    }
+
+    public int getPinPassword() {
+        return pinPassword;
+    }
+
+    public LibraryMemberDTO setPinPassword(int pinPassword) {
+        this.pinPassword = pinPassword;
+        return this;
+    }
 }
