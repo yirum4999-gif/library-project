@@ -1,0 +1,105 @@
+/* 코드명: register.css */
+
+.register-area {
+    width: 720px;
+    padding: 2.5rem 3rem;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.register-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.register-header i {
+    font-size: 1.5rem;
+}
+
+.register-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: bold;
+}
+
+.register-table th {
+    width: 150px;
+    vertical-align: middle;
+}
+
+.register-input-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.register-input-row input {
+    flex: 1;
+    min-width: 0;
+}
+
+.register-action-btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+    padding: 0.375rem 0.75rem;
+    color: #fff;
+    background-color: var(--brand-primary);
+    border: 0;
+    border-radius: 0.375rem;
+}
+
+.register-input {
+    width: 100%;
+}
+
+.email-verification {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.email-verification input {
+    width: 180px;
+    text-align: center;
+}
+
+.register-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.register-submit-btn {
+    padding: 0.375rem 1.5rem;
+    color: #fff;
+    background-color: var(--brand-primary);
+    border: 0;
+    border-radius: 0.375rem;
+}
+
+@media (max-width: 767.98px) {
+
+    .register-area {
+        width: 100%;
+        max-width: 500px;
+        padding: 2rem 1.5rem;
+    }
+
+    .register-table th {
+        width: 110px;
+    }
+
+    .register-input-row {
+        flex-wrap: wrap;
+    }
+
+    .register-action-btn {
+        width: 100%;
+    }
+}
