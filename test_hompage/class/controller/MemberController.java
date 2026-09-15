@@ -32,10 +32,26 @@ public class MemberController extends HttpServlet {
         String page = null;
         
         if (action == null) {
-            action = "/WEB-INF/member/register.jsp";
+            action = "/login";   // 기본값
         }
         
-    }  
+        switch (action) {
+        case "/login":
+            page = "/WEB-INF/views/member/login.jsp";
+            break;
+
+        case "/register":
+            page = "/WEB-INF/views/member/register.jsp";
+            break;
+
+        default:
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+	    }
+	
+	    request.getRequestDispatcher(page).forward(request, response);
+	        
+	    }  
 
 
 }
