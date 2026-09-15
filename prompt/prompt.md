@@ -1,29 +1,23 @@
-# 도서관 테이블
+
+# Command.java
+
+```java
+//=======================================
+// 이름 : Command.java
+// 이 코드의 역할 : Command 인터페이스는 HTTP 요청과 응답을 처리하는 공통 메서드를 정의합니다.
+//=======================================
+package service;
+
+import java.io.IOException;
 
 
-```sql
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
---도서관 회원--
-
---시퀀스--
-CREATE SEQUENCE seq_member_id
-    START WITH 1
-    INCREMENT BY 1
-    NOCACHE
-    NOCYCLE;
-
---생성--
-CREATE TABLE library_member (
-    member_id          NUMBER              NOT NULL,
-    member_no          VARCHAR2(30 CHAR)   NOT NULL,
-    login_email        VARCHAR2(254 CHAR)  NOT NULL,
-    password_hash      VARCHAR2(255 CHAR)  NOT NULL,
-    pin_password       NUMBER              NOT NULL,
-    penalty_end_date   DATE                NULL,
-    joined_at          TIMESTAMP DEFAULT SYSTIMESTAMP NOT NULL,
-
-    CONSTRAINT pk_library_member PRIMARY KEY (member_id),
-    CONSTRAINT uk_library_member_email UNIQUE (login_email),
-    CONSTRAINT uk_library_member_no UNIQUE (member_no)
-);
+public interface Command {
+	
+	void doCommand(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException, Exception;
+	
+}
 ```
