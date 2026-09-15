@@ -1,9 +1,10 @@
 package model;
+
 //=======================================
 //이름 : LibraryMemberDTO.java
 //이 코드의 역할 : library_member 테이블의 데이터를 담는 DTO(Data Transfer Object) 클래스
-//추가설명 : 태환씨가 작성한 코드이며, 이메일 인증 기능과 관련된 데이터 전송에 사용됨
 //setter 메서드들은 메서드 체이닝을 지원하도록 수정(09/14)
+//PIN 번호(pin_password) 필드 추가 (09/15)
 //=======================================
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -16,10 +17,11 @@ public class LibraryMemberDTO {
     private String passwordHash;
     private LocalDateTime penaltyEndDate;
     private Timestamp joinedAt;
+    private int pinPassword; // PIN 번호 추가 (NUMBER 타입에 대응)
 
     public LibraryMemberDTO() {
-		// 기본 생성자
-	}
+        // 기본 생성자
+    }
     
     public int getMemberId() {
         return memberId;
@@ -75,4 +77,12 @@ public class LibraryMemberDTO {
         return this;
     }
 
+    public int getPinPassword() {
+        return pinPassword;
+    }
+
+    public LibraryMemberDTO setPinPassword(int pinPassword) {
+        this.pinPassword = pinPassword;
+        return this;
+    }
 }
